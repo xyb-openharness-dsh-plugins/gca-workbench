@@ -18,7 +18,7 @@
  *   node scripts/check-data-dir.mjs --self-test      # 反例必须能红
  * 退出码：0 通过 / 1 失败 / 2 用法错误
  */
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
 const SELF_TEST = process.argv.includes('--self-test')
@@ -36,8 +36,6 @@ export function check({ client, app, dsh, patch }) {
     ['pickDirectory', /pickDirectory\s*\(/],
     ['showDirectoryPicker', /showDirectoryPicker\s*\(/],
     ['webkitdirectory', /webkitdirectory/],
-    /* 服务端原生选择器也算真动作（breast 用 POST /api/fs/pick 由宿主弹出系统面板） */
-    ['server picker', /\/api\/fs\/pick|fs\/pick|nativePicker|pick\/native/i],
   ]
   const hit = pickerPatterns.find(([, re]) => re.test(code))
 
@@ -52,8 +50,6 @@ export function check({ client, app, dsh, patch }) {
   const guardOk = hasGuard && reasons.length >= 3
 
   const patchHasRoot = /root:\s*!!js\s*dshHomePath\(/.test(patch)
-  /* dsh/ 下的任何一个文件读 config.root 都算（breast 在 dsh/host.js 里读）。
-     调用方传进来的 dsh 是**整个 dsh 目录拼接**，这里不再只认 index.js。 */
   const dshReadsRoot = /config\??\.root|config\.root/.test(stripComments(dsh))
 
   const hasUnmountedNotice = /目录未真实挂载|未真实挂载/.test(code)
@@ -66,7 +62,6 @@ export function check({ client, app, dsh, patch }) {
 
   if (patchHasRoot && dshReadsRoot) oks.push('③ cordis.patch.yml 有 config.root: dshHomePath(...)，dsh/index.js 读取 config.root')
   else fails.push(`③ 目录落点没接上：patch 有 dshHomePath=${patchHasRoot} · dsh 读 config.root=${dshReadsRoot}`)
-
 
   if (hasUnmountedNotice && !hit) fails.push('④ 只写了「目录未真实挂载」提示，没有任何选择动作——这正是"假入口"的形态')
   else if (hasUnmountedNotice) oks.push('④ 未挂载提示只作为降级文案出现（选择动作也在）')
@@ -91,7 +86,7 @@ const GOOD = {
       await fetch(API + '/root', { method: 'POST', body: JSON.stringify({ dir }) })
     }`,
   app: "window.parent.postMessage({ type: 'x:dir', dir: window.__DIR__ }, location.origin)",
-  dsh: "export function apply(ctx, config) { const root = config?.root; if (!root) return reject('root 未配置') }\nif (path === apiPrefix + '/root' && req.method === 'POST') { return sendJson(res, 200, { dir: source.setDataRoot(body.dir) }) }",
+  dsh: "export function apply(ctx, config) { const root = config?.root; if (!root) return reject('root 未配置') }",
   patch: 'config:\n  root: !!js dshHomePath("x-workbench")\n',
 }
 
@@ -108,22 +103,7 @@ if (!existsSync(join(root, 'lib/client.js')) && !existsSync(join(root, 'public/a
   process.exit(2)
 }
 
-/* 服务端代码不一定在 dsh/：lung 在 lib/server/、breast 在 dsh/host.js。都拼进来再判。 */
-const readTreeJs = (dir, depth = 0) => {
-  if (depth > 2) return ''
-  let out = ''
-  try {
-    for (const e of readdirSync(join(root, dir), { withFileTypes: true })) {
-      if (e.name.startsWith('.') || e.name === 'node_modules') continue
-      const rel = join(dir, e.name)
-      if (e.isDirectory()) out += '\n' + readTreeJs(rel, depth + 1)
-      else if (/\.(m?js)$/.test(e.name)) out += '\n' + read(rel)
-    }
-  } catch { /* 目录不存在 */ }
-  return out
-}
-const dshAll = readTreeJs('dsh') + readTreeJs('lib') + readTreeJs('src')
-const result = check({ client: read('lib/client.js'), app: read('public/app.js'), dsh: dshAll, patch: read('cordis.patch.yml') })
+const result = check({ client: read('lib/client.js'), app: read('public/app.js'), dsh: read('dsh/index.js'), patch: read('cordis.patch.yml') })
 for (const o of result.oks) console.log(`✓ ${o}`)
 for (const f of result.fails) console.error(`✗ ${f}`)
 console.log(result.pass ? '\n✓ 资料目录闸门通过' : '\n✗ 资料目录闸门未通过：按钮必须真的能选目录并落盘')

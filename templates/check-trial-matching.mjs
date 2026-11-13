@@ -29,7 +29,7 @@ const SCAN_DIRS = ['dsh', 'src', 'public', 'lib']
 
 /* 触发条件：存在明确匹配模块（trialMatch 符号 / 路由 / "匹配引擎"标注 / trial-match 模块文件名）
    才启用三态断言；只提到"试验"与"匹配"二词的仓（如一期演示线）不算实现，跳过不误报。
-   psc-workbench 实测（2026-11-14）：匹配纯函数文件导出叫 matchTrial/matchAll，
+   gca-workbench 实测（2026-11-14）：匹配纯函数文件导出叫 matchTrial/matchAll，
    不含 trialMatch 字面量，于是闸门只看到调用方（app.js 有 pct 无档位词）而误红——
    模块文件名 trial-match.js 也算触发面，且调用方与模块合并评估档位词。 */
 const TRIGGER = /trialMatch|trial_match|matchTrials|匹配引擎/
