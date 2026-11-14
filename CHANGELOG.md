@@ -1,3 +1,10 @@
+## 0.1.1 — 2026-11-14（D2 体检 + D3 验收自修轮 · 夜班无人值守）
+
+- 修复 P0-1：发作空态「记一次发作」按钮点击报错——新增发作录入表单（episode，demo 态内存 / 开发版 API 双通道落 sqlite episode_events）。
+- 收藏链路落地：试验卡「收藏」按钮 + 收藏页三态（在跟/准备问/已归档）+ 重复收藏拒收零副作用 + 快照无登记时间线声明（saved_trial，只存本机 localStorage）。
+- probe-gca-m2 增 SV1/SV1b/SV2/SV3/EF1 五条断言（59 条）并补 --self-test 反向对照。
+- mineru 指标字典注释残留清理；版本 0.1.0 → 0.1.1 重装机（bundles 78，verify-desktop-load 通过）。
+
 # 变更记录
 
 只增不删；每条写清"改了什么 + 为什么 + 用户可见结果"。版本号与 VERSION、package.json 三处必须一致。
