@@ -487,7 +487,23 @@
               ${kv('行动计划', e.actionPlan ? esc(e.actionPlan) : '【待核：请录入医生给的计划原文】')}
             </div>
             <p class="muted" style="margin-top:6px">${esc(e.note || '')}</p>
-          </details>`).join('') : emptyState('还没有发作记录', '发作（如新发头痛加重、头皮压痛、视力症状）发生后在这里记一笔，包括医生给的处置原文。', '记一次发作', 'episode-new')}
+          </details>`).join('') : emptyState('还没有发作记录', '发作（如新发头痛加重、头皮压痛、视力症状）发生后在下面的表单记一笔，包括医生给的处置原文。', '去发作录入表', "document.getElementById('episode-form') && document.getElementById('episode-form').scrollIntoView()")}
+        <div class="card" id="episode-form" style="margin-top:10px">
+          <div class="card-head"><span class="card-title">记一次发作</span><span class="muted">只抄事实原文；是不是 GCA 活动、怎么处理由医生判断</span></div>
+          <div class="row" style="margin-top:6px">
+            <label class="field"><span>开始日期 *</span><input type="date" id="ep-start"></label>
+            <label class="field"><span>缓解日期（未缓解留空）</span><input type="date" id="ep-end"></label>
+            <label class="field"><span>就诊医院</span><input type="text" id="ep-hospital" maxlength="60" placeholder="例如：市一院"></label>
+          </div>
+          <div class="field" style="margin-top:6px"><label for="ep-signs">表现（原文）</label><input type="text" id="ep-signs" maxlength="200" placeholder="例如：左颞部胀痛加重 + 头皮压痛，晨起最明显"></div>
+          <div class="field" style="margin-top:6px"><label for="ep-labs">化验变化（可空）</label><input type="text" id="ep-labs" maxlength="120" placeholder="例如：ESR 62，CRP 38（抄单据原文）"></div>
+          <div class="field" style="margin-top:6px"><label for="ep-treat">医生处置（原文）</label><input type="text" id="ep-treat" maxlength="200" placeholder="逐字抄医生的处置，不自己归纳"></div>
+          <div class="field" style="margin-top:6px"><label for="ep-plan">行动计划（医生原文，可空）</label><input type="text" id="ep-plan" maxlength="200" placeholder="例如：激素维持，两周后复诊 ESR"></div>
+          <div class="actions-row" style="margin-top:10px">
+            <button class="btn" type="button" id="save-episode">保存这次发作</button>
+            <span class="muted">视力症状只是记录：新发视力下降/黑朦/复视请当日就医</span>
+          </div>
+        </div>
         <p class="muted" style="margin-top:8px">本页只回顾已发生的事实。发作是不是 GCA 活动、该怎么处理，由医生判断；计划原文请逐字录入。</p>
       </div>`
   }
@@ -1080,6 +1096,34 @@
 
   /* 试验卡：候选池口径写在卡头（已载 N / 快照 M / 相关 Y + 快照日期），
      三档 ✓/✕/? 逐条 + 硬性单列；可对照 <2 时不给百分数。 */
+  /* 收藏（saved_trial）：只存本机 localStorage，三态 在跟/准备问/已归档；
+     拒收重复收藏（无副作用、可恢复）；本仓快照没有登记状态时间线，明写「没有」，不画进度条。 */
+  function savedTrials() {
+    try { return JSON.parse(localStorage.getItem('gca.savedTrials') || '[]') || [] } catch { return [] }
+  }
+  function saveTrialState(key) {
+    const hit = savedTrials().find((s) => s.trialKey === key)
+    return hit ? hit.state : null
+  }
+  function toggleSaveTrial(key) {
+    const list = savedTrials()
+    if (list.some((s) => s.trialKey === key)) { toast('已在收藏里：拒收重复收藏，无副作用'); return false }
+    list.push({ trialKey: key, savedOn: new Date().toISOString().slice(0, 10), state: 'watching' })
+    localStorage.setItem('gca.savedTrials', JSON.stringify(list))
+    return true
+  }
+  function setTrialState(key, st) {
+    const list = savedTrials()
+    const hit = list.find((s) => s.trialKey === key)
+    if (!hit) return
+    hit.state = st
+    localStorage.setItem('gca.savedTrials', JSON.stringify(list))
+  }
+  function removeTrial(key) {
+    localStorage.setItem('gca.savedTrials', JSON.stringify(savedTrials().filter((s) => s.trialKey !== key)))
+  }
+  const TRIAL_STATE_LABEL = { watching: '在跟', asking: '准备问', archived: '已归档' }
+
   function trialCard(t) {
     const bandCls = { high: 'ok', partial: 'warn', needs_info: 'grey', ineligible: 'no' }[t.band] || 'grey'
     const mark = (tier) => (tier === 'satisfied' ? '✓' : tier === 'conflict' ? '✕' : '?')
@@ -1104,6 +1148,8 @@
           </div>
           <h2>${esc(t.title)}</h2>
           <p class="trial-reg">${esc(t.statusNote)}<br><span class="muted">${esc(poolLine)}</span></p>
+          <p><button class="pill grey" type="button" data-save-trial="${esc(t.recordId)}" aria-pressed="${saveTrialState(t.recordId) ? 'true' : 'false'}"
+            title="收藏到本机（在跟 / 准备问 / 已归档 三态）">${saveTrialState(t.recordId) ? '已收藏 · ' + (TRIAL_STATE_LABEL[saveTrialState(t.recordId)] || '') : '收藏'}</button></p>
         </div>
         <div class="fit ${bandCls}"><b>${showPct ? t.pct + '<small>%</small>' : '—'}</b><span>粗筛符合度</span><em>${esc(t.bandLabel)}</em></div>
       </div>
@@ -1220,10 +1266,35 @@
   }
 
   function vTrialsSaved() {
-    return `
+    const list = savedTrials()
+    const tiers = [...trialTiers(), ...((DEMO && DEMO.trialMatch) || {}).A || [], ...((DEMO && DEMO.trialMatch) || {}).B || []]
+    const titleOf = (key) => {
+      const hit = tiers.find((t) => t.recordId === key)
+      return hit ? hit.title : key
+    }
+    if (!list.length) {
+      return `
       <div class="card">
         <div class="card-head"><span class="card-title">收藏</span></div>
-        <p class="muted">还没有收藏。检索结果卡上的「收藏」会存在本机。</p>
+        <p class="muted">还没有收藏。检索/匹配结果卡上的「收藏」会存在本机（拒收重复收藏，无副作用）。</p>
+      </div>`
+    }
+    return `
+      <div class="card">
+        <div class="card-head"><span class="card-title">收藏</span><span class="muted">共 ${list.length} 条 · 只存本机</span></div>
+        <ul class="list">
+          ${list.map((s) => `
+          <li>
+            <span class="time">${esc(s.savedOn)}</span>
+            <span>
+              <b>${esc(titleOf(s.trialKey))}</b>
+              <br>
+              ${Object.entries(TRIAL_STATE_LABEL).map(([k, lab]) => `<button class="pill ${s.state === k ? 'ok' : 'grey'}" type="button" data-trial-state="${esc(s.trialKey)}|${k}" aria-pressed="${s.state === k ? 'true' : 'false'}">${lab}</button>`).join(' ')}
+              <button class="pill grey" type="button" data-trial-remove="${esc(s.trialKey)}">移除</button>
+            </span>
+          </li>`).join('')}
+        </ul>
+        <p class="muted" style="margin-top:8px">本仓快照只有登记快照，没有登记状态时间线——这里不画进度条，也不推断试验进展。</p>
       </div>`
   }
 
@@ -1364,6 +1435,39 @@
       const titles = { us_temporal: '颞动脉超声', biopsy: '颞动脉活检', cta: 'CTA / MRA', petct: 'PET-CT', pmr_followup: 'PMR 随访' }
       profile().screening.push({ type: kind, date, result, detail, sectionTitle: titles[kind] || '' })
       toast('已记下这一次（演示：仅本页内存，不落库）')
+      render()
+    })
+    /* 收藏（saved_trial）：demo 与开发版都只存本机 localStorage；重复收藏拒收且无副作用 */
+    $$('[data-save-trial]').forEach((b) => b.addEventListener('click', () => {
+      if (toggleSaveTrial(b.getAttribute('data-save-trial'))) toast('已收藏到本机（三态：在跟 / 准备问 / 已归档）')
+      render()
+    }))
+    $$('[data-trial-state]').forEach((b) => b.addEventListener('click', () => {
+      const [key, st] = b.getAttribute('data-trial-state').split('|')
+      setTrialState(key, st)
+      render()
+    }))
+    $$('[data-trial-remove]').forEach((b) => b.addEventListener('click', () => {
+      removeTrial(b.getAttribute('data-trial-remove'))
+      toast('已从收藏移除')
+      render()
+    }))
+    /* 发作录入（episode）：demo 态内存 push；开发版由 migrate-public 注入双通道（API 在 → 落 sqlite episode_events） */
+    const saveEp = $('#save-episode')
+    if (saveEp) saveEp.addEventListener('click', () => {
+      const start = $('#ep-start')?.value
+      if (!start) return toast('先填开始日期（发作哪天开始）')
+      profile().episodes.push({
+        start,
+        end: $('#ep-end')?.value || null,
+        hospital: $('#ep-hospital')?.value.trim() || null,
+        signs: $('#ep-signs')?.value.trim() || '',
+        labsNote: $('#ep-labs')?.value.trim() || '',
+        treatment: $('#ep-treat')?.value.trim() || '',
+        actionPlan: $('#ep-plan')?.value.trim() || null,
+        note: '',
+      })
+      toast('已记下这一次（演示：仅本页内存；开发版会写入本机数据库）')
       render()
     })
     const pick = $('#pick-file')
@@ -2062,6 +2166,20 @@ const ROUTES = {
     var v = (document.getElementById('new-q') || {}).value
     if (!v || !v.trim()) { toastGCA('先写一条问题'); return null }
     return { kind: 'question', data: { question: v.trim() } }
+  })
+  /* 发作录入（episode → episode_events） */
+  hookWrite('#save-episode', function () {
+    var start = (document.getElementById('ep-start') || {}).value
+    if (!start) { toastGCA('先填开始日期（发作哪天开始）'); return null }
+    return { kind: 'episode', data: {
+      start: start,
+      end: (document.getElementById('ep-end') || {}).value || null,
+      hospital: (document.getElementById('ep-hospital') || {}).value || null,
+      signs: (document.getElementById('ep-signs') || {}).value || null,
+      labsNote: (document.getElementById('ep-labs') || {}).value || null,
+      treatment: (document.getElementById('ep-treat') || {}).value || null,
+      actionPlan: (document.getElementById('ep-plan') || {}).value || null,
+    }, after: function (app2) { app2.state.view = 'episodes'; app2.state.sub = 'list'; app2.render() } }
   })
   /* 私密切换（POST /privacy 落库 + 重载；乐观更新，失败回退提示） */
   document.addEventListener('click', function (e) {

@@ -41,13 +41,23 @@ function findChrome() {
   return candidates.find(existsSync) || null
 }
 
+const SELF_TEST = process.argv.includes('--self-test')
 const server = createServer(async (req, res) => {
   try {
     const urlPath = decodeURIComponent(new URL(req.url, 'http://x').pathname)
     if (urlPath === '/favicon.ico') { res.writeHead(204); res.end(); return }
     const file = normalize(join(ROOT, urlPath))
     if (!file.startsWith(ROOT)) { res.writeHead(403); res.end(); return }
-    const body = await readFile(file)
+    let body = await readFile(file)
+    /* --self-test：反向对照——拆掉收藏/发作录入入口后，SV/EF 断言必须变红（证明探针有效） */
+    if (SELF_TEST && urlPath.includes('app.js')) {
+      const mutated = body.toString('utf8')
+        .replaceAll('data-save-trial', 'data-save-trial-x')
+        .replaceAll('data-trial-state', 'data-trial-state-x')
+        .replaceAll("id=\"save-episode\"", "id=\"save-episode-x\"")
+        .replaceAll("id=\"episode-form\"", "id=\"episode-form-x\"")
+      body = Buffer.from(mutated)
+    }
     res.writeHead(200, { 'content-type': MIME[extname(file)] || 'application/octet-stream' })
     res.end(body)
   } catch { res.writeHead(404); res.end('not found') }
@@ -370,6 +380,70 @@ async function main() {
   const epBack = await go('episodes/list')
   t('MT13b', '切回档案 A：PMR 消失、发作回空态（MT13 不串档）', aBack.key === 'A' && !cbBack.text.includes('风湿性多肌痛（PMR）') && cbBack.text.includes('未见合并症记录') && epBack.text.includes('还没有发作记录') && !epBack.text.includes('当天联系风湿科值班电话'), { footer: aBack.footer })
 
+  /* ---------- SV/EF：收藏链路 + 发作录入（35 号四段呈现/收藏 + 发作空态修复） ----------
+     断言前置缺失时显式记 FAIL（self-test 反向对照依赖这一点），不许静默跳过。 */
+  await go('trials/search')
+  const svBtn = await page.evaluate(() => document.querySelector('#view [data-save-trial]')?.getAttribute('data-save-trial') || null)
+  if (svBtn) {
+    await page.click('#view [data-save-trial]')
+    await sleep(200)
+    const svSaved = await go('trials/saved')
+    const svInfo = await page.evaluate(() => ({
+      rows: document.querySelectorAll('#view ul.list > li').length,
+      states: [...document.querySelectorAll('#view [data-trial-state]')].map((b) => b.getAttribute('data-trial-state')),
+      hasTimelineNote: document.querySelector('#view').innerText.includes('没有登记状态时间线'),
+    }))
+    t('SV1', '收藏：卡上有收藏按钮 → 点击 → 收藏页 1 条 + 三态 + 无登记时间线声明',
+      svInfo.rows === 1 && svInfo.states.length === 3 && svInfo.hasTimelineNote, { svBtn, ...svInfo })
+    const firstState = await page.evaluate(() => {
+      [...document.querySelectorAll('#view [data-trial-state]')].find((b) => b.getAttribute('data-trial-state').endsWith('|asking'))?.click()
+      return true
+    })
+    await sleep(150)
+    const svState = await page.evaluate(() => ({ saved: (JSON.parse(localStorage.getItem('gca.savedTrials') || '[]')[0] || {}).state || null }))
+    t('SV1b', '收藏三态切换落本机（在跟 → 准备问）', firstState && svState.saved === 'asking', svState)
+    const rm = await page.evaluate(() => { document.querySelector('#view [data-trial-remove]')?.click(); return true })
+    await sleep(150)
+    const svAfterRemove = await page.evaluate(() => JSON.parse(localStorage.getItem('gca.savedTrials') || '[]').length)
+    t('SV2', '收藏移除后恢复空收藏（可恢复）', rm && svAfterRemove === 0, { count: svAfterRemove })
+    await go('trials/search')
+    await page.click('#view [data-save-trial]')
+    await sleep(150)
+    await page.click('#view [data-save-trial]')
+    await sleep(150)
+    const svDup = await page.evaluate(() => JSON.parse(localStorage.getItem('gca.savedTrials') || '[]').length)
+    t('SV3', '重复收藏拒收且无副作用（仍 1 条）', svDup === 1, { count: svDup })
+  } else {
+    t('SV1', '收藏：卡上有收藏按钮 → 点击 → 收藏页 1 条 + 三态 + 无登记时间线声明', false, { svBtn: null })
+    t('SV1b', '收藏三态切换落本机（在跟 → 准备问）', false, { reason: 'no save button' })
+    t('SV2', '收藏移除后恢复空收藏（可恢复）', false, { reason: 'no save button' })
+    t('SV3', '重复收藏拒收且无副作用（仍 1 条）', false, { reason: 'no save button' })
+  }
+  {
+    const epEmpty = await go('episodes/list')
+    const hasForm = await page.evaluate(() => !!document.getElementById('episode-form'))
+    if (hasForm) {
+      await page.evaluate(() => document.querySelector('#view .empty button')?.click())
+      await sleep(200)
+      const noClickErr = errors.filter((e) => String(e).includes('Unexpected')).length === 0
+      await page.evaluate(() => {
+        document.getElementById('ep-start').value = '2026-11-10'
+        document.getElementById('ep-signs').value = '头痛加重伴头皮压痛'
+      })
+      await page.click('#save-episode')
+      await sleep(200)
+      const efInfo = await page.evaluate(() => ({
+        folds: document.querySelectorAll('#view details.phase-fold').length,
+        text: document.querySelector('#view').innerText,
+        toast: document.getElementById('toast') ? document.getElementById('toast').textContent : '',
+      }))
+      t('EF1', '发作空态按钮无报错 + 表单保存 → 列表 1 条折叠卡（demo 内存）+ 演示态提示',
+        efInfo.folds === 1 && efInfo.toast.includes('演示') && noClickErr, { folds: efInfo.folds, toast: efInfo.toast.slice(0, 40), noClickErr })
+    } else {
+      t('EF1', '发作空态按钮无报错 + 表单保存 → 列表 1 条折叠卡（demo 内存）+ 演示态提示', false, { reason: 'no episode form' })
+    }
+  }
+
   /* ---------- C9：390 宽无横向溢出（CDP 设备仿真） ---------- */
   const client = await page.target().createCDPSession()
   await client.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true })
@@ -388,6 +462,13 @@ async function main() {
   const counts = { total: results.length, pass: results.length - fails.length, fail: fails.length }
   console.log(`\nSUMMARY: ${counts.pass}/${counts.total} pass, ${counts.fail} fail` + (fails.length ? ' → ' + fails.map(f => f.id).join(', ') : ''))
   console.log('SUMMARY_JSON ' + JSON.stringify({ pass: fails.length === 0, counts }))
+  if (SELF_TEST) {
+    /* 反向对照：SV1/SV1b/SV2/SV3/EF1 五条必须全红，证明拆掉入口后探针有效 */
+    const ids = ['SV1', 'SV1b', 'SV2', 'SV3', 'EF1']
+    const broken = ids.every((id) => results.some((r) => r.id === id && !r.pass))
+    console.log(broken ? 'self-test：反向对照已证明探针会红（PASS）' : 'self-test：反向对照没有变红（探针失效）')
+    process.exit(broken ? 0 : 2)
+  }
   process.exit(fails.length ? 1 : 0)
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "@xyb-community/gca-workbench",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "本机优先的 GCA 确诊档案、ESR/CRP 炎症化验随访、发作—缓解记录、颞动脉超声/CTA/MRA/PET-CT 影像复查与 PMR 共病随访、头痛晨僵症状与用药（激素阶梯/托珠单抗）整理工作台",
   "private": true,
   "type": "module",

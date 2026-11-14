@@ -8,7 +8,7 @@
  * - 真实云解析需要用户在设置页填 Token（存 .secrets，git 忽略），未配置时 upload 返回
  *   `needsSetup`，绝不假装解析成功。勾选与保存都不联网。
  *
- * GCA 指标字典：胆汁淤积/肝细胞/合成/血象/肾功能——只匹配名称，不做参考范围判定（阈值一律【待核】）。
+ * GCA 指标字典：炎症/血象/肝酶监测/代谢监测（激素副作用）/肾功能——只匹配名称，不做参考范围判定（阈值一律【待核】）。
  */
 
 import { readFileSync as readFileSyncFn, writeFileSync as writeFileSyncFn } from 'node:fs';

@@ -269,6 +269,20 @@ const BOOT_BLOCK = `
     if (!v || !v.trim()) { toastGCA('先写一条问题'); return null }
     return { kind: 'question', data: { question: v.trim() } }
   })
+  /* 发作录入（episode → episode_events） */
+  hookWrite('#save-episode', function () {
+    var start = (document.getElementById('ep-start') || {}).value
+    if (!start) { toastGCA('先填开始日期（发作哪天开始）'); return null }
+    return { kind: 'episode', data: {
+      start: start,
+      end: (document.getElementById('ep-end') || {}).value || null,
+      hospital: (document.getElementById('ep-hospital') || {}).value || null,
+      signs: (document.getElementById('ep-signs') || {}).value || null,
+      labsNote: (document.getElementById('ep-labs') || {}).value || null,
+      treatment: (document.getElementById('ep-treat') || {}).value || null,
+      actionPlan: (document.getElementById('ep-plan') || {}).value || null,
+    }, after: function (app2) { app2.state.view = 'episodes'; app2.state.sub = 'list'; app2.render() } }
+  })
   /* 私密切换（POST /privacy 落库 + 重载；乐观更新，失败回退提示） */
   document.addEventListener('click', function (e) {
     var btn = e.target && e.target.closest && e.target.closest('[data-privacy]')
