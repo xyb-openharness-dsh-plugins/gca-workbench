@@ -1,4 +1,4 @@
-/* GCA（原发性硬化性胆管炎）工作台 · 初始数据模型（0001）
+/* GCA（巨细胞动脉炎 Giant Cell Arteritis）工作台 · 初始数据模型（0001）
  *
  * 家族四条契约（与家族各仓同源）：
  *   1. 看法恒不为结论（viewpoints 只是记录，无 is_conclusion 列）；
@@ -7,18 +7,20 @@
  *   4. 事实四层不合并（文档 / 候选 / 记录 / 指标分表存放）。
  *
  * 非肿瘤数据层红线（GCA 语境）：
- *   A. 无判读列：全库不设 diagnosis / risk_level / stage / 线序 / 疗效 / 狭窄进展判定 /
- *      CA19-9 阈值判定 类列。胆管相关肿瘤监测只以「医生已安排的筛查随访」条目存在
- *      screening_records，不存风险量化值。「随访第 N 天 / 距上次发作 N 天 / 近 90 天发作
- *      次数 / 距上次肠镜 N 月」等派生值读时计算，不落库。
- *   B. 发作—缓解是第一实体：episode_events 一行=一次发作（start_date 到 end_date，
+ *   A. 无判读列：全库不设 diagnosis / risk_level / stage / 线序 / 疗效 / 血管受累进展判定 /
+ *      ESR·CRP 阈值判定 类列。视力预警（新发视力下降/黑朦/复视）只以患者自录症状条目存在
+ *      symptom_notes.vision_alert，就医提醒不做判读、不给分诊结论。「随访第 N 天 /
+ *      距上次发作 N 天 / 近 90 天发作次数 / 距上次影像复查 N 月」等派生值读时计算，不落库。
+ *   B. 发作（flare）是第一实体：episode_events 一行=一次发作（start_date 到 end_date，
  *      end IS NULL 表示发作未记缓解）；action_plan 只存医生行动计划【原话照录】，
- *      界面不生成；trigger/signs 只照录患者与医生原话，不做因果与定性判定。
+ *      界面不生成；signs 只照录患者与医生原话（新发头痛、头皮压痛、下颌跛行、视力症状），
+ *      不做因果与定性判定。
  *   C. 化验可比组 = method + org：lab_results 不做跨组合并，分类不进趋势；
- *      影像（MRCP/ERCP/FibroScan）跨机构按 org 分组陈列（imaging_events），不合并画线。
+ *      影像（颞动脉超声/CTA/MRA/PET-CT）跨机构按 org 分组陈列（imaging_events），不合并画线。
  *
  * 筛查红线：screening_records 只登记「医生已安排/已做」的事实与原话，无 next_due 排程列——
  * 「下次复查」只能以医生原话存在 subjects.action_plan 或条目 plan_text 里，本库不生成排程。
+ * 共病 PMR（风湿性多肌痛）只以「医生已安排的随访」口径呈现，不做共病判读。
  *
  * 迁移只增不改：本文件冻结后（sha256 见 freeze-contract.md），
  * 要加结构只能新增 0002_*.sql，改这里会被 check 拦下。
@@ -52,13 +54,13 @@ CREATE TABLE section_titles (
 /* ---------- 指标（3） ---------- */
 
 /* 指标目录：分类只作分组展示键，不进趋势
- * cholestasis=胆汁淤积（ALP/GGT） / hepatocell=肝细胞（ALT/AST） / bili=胆红素 /
- * synth=合成功能（ALB/PLT） / other=其他 */
+ * inflam=炎症活动指标（ESR/CRP） / hemogram=血象（Hb/PLT） / steroid=激素监测（ALT） /
+ * metabolic=激素副作用监测（空腹血糖） / vital=血压（SBP/DBP） */
 CREATE TABLE metric_defs (
-  key         TEXT PRIMARY KEY,  -- ALP / GGT / TBil / ALT / AST / ALB / PLT …
+  key         TEXT PRIMARY KEY,  -- ESR / CRP / Hb / PLT / ALT / FBG / SBP / DBP …
   title       TEXT,
   category    TEXT,
-  unit        TEXT,              -- U/L / µmol/L / g/L / ×10⁹/L
+  unit        TEXT,              -- mm/h / mg/L / g/L / ×10⁹/L / U/L / mmol/L / mmHg
   color       TEXT,
   ord         INTEGER
 );
@@ -132,16 +134,17 @@ CREATE TABLE visit_questions (
   in_use      INTEGER DEFAULT 1
 );
 
-/* 症状与生活影响（痒/累/其他）：强度只存患者自录原文与档位事实，不换算量表结论 */
+/* 症状与生活影响（头痛/视力/晨僵/下颌跛行等）：强度只存患者自录原文与档位事实，
+ * 不换算量表结论；视力预警只记录与提醒，界面不做判读。 */
 CREATE TABLE symptom_notes (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   profile_key TEXT NOT NULL,
   recorded_on TEXT,              -- 未知则 NULL
-  kind        TEXT,              -- itch / fatigue / other
-  itch_level  INTEGER,           -- 0–10 自评档位【患者自录】，缺 NULL；不判级
-  fatigue_level INTEGER,
-  night_worse INTEGER,
-  sleep_breaks INTEGER,
+  kind        TEXT,              -- headache / vision / stiffness / jaw / other
+  headache_level INTEGER,        -- 0–10 头痛自评档位【患者自录】，缺 NULL；不判级
+  stiffness_level INTEGER,
+  scalp_tenderness INTEGER,      -- 头皮压痛 0/1【患者自录】
+  jaw_claud INTEGER,             -- 下颌跛行 0/1【患者自录】
   note        TEXT,              -- 患者原话
   is_private  INTEGER DEFAULT 0,
   ver         INTEGER DEFAULT 1,
@@ -191,8 +194,9 @@ CREATE TABLE meds (
 
 /* ---------- GCA 专属（3） ---------- */
 
-/* 发作—缓解（第一实体）：一行=一次发作；end_date IS NULL=发作中（缓解日期未记录）
- * signs/labs_note/treatment 只照录原话；action_plan 只存医生行动计划原文，不生成。 */
+/* 发作（flare，第一实体）：一行=一次发作；end_date IS NULL=发作中（缓解日期未记录）
+ * signs/labs_note/treatment 只照录原话（新发头痛、头皮压痛、下颌跛行、视力症状等）；
+ * action_plan 只存医生行动计划原文，不生成；发作判定（是不是 GCA 活动）归医生。 */
 CREATE TABLE episode_events (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   profile_key   TEXT NOT NULL,
@@ -200,7 +204,7 @@ CREATE TABLE episode_events (
   end_date      TEXT,            -- NULL=缓解未记录
   hospital      TEXT,
   signs_text    TEXT,            -- 表现【原话照录】
-  labs_note     TEXT,            -- 化验变化【照录】
+  labs_note     TEXT,            -- 化验变化（ESR/CRP 等）【照录】
   treatment_text TEXT,           -- 医生处置【照录】
   action_plan   TEXT,            -- 行动计划【医生原话照录】
   is_private    INTEGER DEFAULT 0,
@@ -210,14 +214,14 @@ CREATE TABLE episode_events (
   in_use        INTEGER DEFAULT 1
 );
 
-/* 影像与弹性检查：MRCP / ERCP / FibroScan；跨机构按 org 陈列不合并画线 */
+/* 影像复查：颞动脉超声（晕轮征 halo sign）/ CTA / MRA / PET-CT；跨机构按 org 陈列不合并画线 */
 CREATE TABLE imaging_events (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   profile_key   TEXT NOT NULL,
-  kind          TEXT,            -- mrcp / ercp / fibroscan（原文照录）
+  kind          TEXT,            -- us_temporal / cta / mra / petct（原文照录）
   exam_date     TEXT,
   org           TEXT,
-  finding_text  TEXT,            -- 发现【报告原文照录】，不判狭窄进展
+  finding_text  TEXT,            -- 发现【报告原文照录】，不判血管受累进展
   report_id     TEXT,
   is_private    INTEGER DEFAULT 0,
   ver           INTEGER DEFAULT 1,
@@ -229,7 +233,7 @@ CREATE TABLE imaging_events (
 CREATE TABLE screening_records (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   profile_key   TEXT NOT NULL,
-  kind          TEXT,            -- colonoscopy / mrcp / fibroscan / gallbladder / endoscopy
+  kind          TEXT,            -- us_temporal / cta / mra / petct / pmr_followup
   done_on       TEXT,            -- NULL=已安排未做
   result_text   TEXT,            -- 结果【报告原文照录】
   plan_text     TEXT,            -- 医生安排原话（含复查节奏原话）

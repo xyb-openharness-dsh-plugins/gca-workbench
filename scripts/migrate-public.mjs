@@ -135,8 +135,8 @@ const BOOT_BLOCK = `
   function emptyProfile(key, name) {
     return {
       key: key, label: name, name: name, age: null, sex: null, diagnosedAt: null, startedAt: null,
-      weightKg: null, antibodies: { panca: 'untested', ana: 'untested', note: '' },
-      fibrosis: null, ibd: { type: 'untested', note: '', colonoscopyLast: null },
+      weightKg: null, antibodies: { ana: 'untested', note: '' },
+      imaging: null, pmr: { status: 'untested', note: '', lastVisit: null },
       comorbidity: [], meds: [], adherence: [], episodes: [], symptoms: [], screening: [],
       questions: [], documents: [], trials: [], pathway: [], labs: [],
     }
@@ -238,16 +238,16 @@ const BOOT_BLOCK = `
     var d = new Date()
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
   }
-  /* 痒与累（mind → symptom_notes） */
-  hookWrite('#save-itch', function () {
-    var itchEl = document.getElementById('itch')
-    if (!itchEl) return null
+  /* 头痛与晨僵（mind → symptom_notes） */
+  hookWrite('#save-headache', function () {
+    var headEl = document.getElementById('headache')
+    if (!headEl) return null
     var app = window.__GCA_APP__
+    var b = function (id) { var el = document.getElementById(id); return el && el.checked ? 1 : 0 }
     return { kind: 'mind', data: {
-      kind: 'itch', itch: Number(itchEl.value),
-      nightWorse: document.getElementById('night') && document.getElementById('night').checked ? 1 : 0,
-      sleepBreaks: app && app.state && app.state.draft && app.state.draft.sleepBreaks,
-      fatigue: app && app.state && app.state.draft ? app.state.draft.fatigue : null,
+      kind: 'headache', headache: Number(headEl.value),
+      scalp: b('scalp'), jaw: b('jaw'), vision: b('vision'),
+      stiffness: app && app.state && app.state.draft ? app.state.draft.stiffness : null,
       note: (document.getElementById('note') || {}).value || null,
       recordedOn: localTodayGCA(),
     }, after: function (app2) { app2.state.view = 'symptoms'; app2.state.sub = 'log'; app2.render() } }

@@ -17,7 +17,7 @@ import { DB_FILE, HOME_DIR } from '../lib/identity.js';
 import { version, displayVersion, build as buildDate } from '../lib/version.js';
 
 /* 记录写入 kind → 表（八个 kind 与家族合同同构；GCA 语义映射见 addEntry 注释）。
-   bleed 是家族合同名（AHA 语境），GCA 的同一实体是发作 → 与 episode 同表同权。 */
+   bleed 是家族合同名（AHA 语境），GCA 的同一实体是发作（flare）→ 与 episode 同表同权。 */
 const WRITE_KINDS = {
   episode: 'episode_events',
   bleed: 'episode_events',
@@ -160,7 +160,7 @@ export class Workbench {
 
   /* ---------- 记录写入（八个 kind · demo 之外可真写库，刷新后还在） ----------
    * 与家族写入闭环合同同构（AHA 0.3.0 八类），GCA 语义映射：
-   *   episode↔bleed（GCA 第一实体是发作不是出血）、mind→symptom_notes（痒/累感受）。
+   *   episode↔bleed（GCA 第一实体是发作 flare 不是出血）、mind→symptom_notes（头痛/晨僵等感受）。
    * 另支持 GCA 专有：screening / imaging / viewpoint（schema 已有表，多给不违反合同）。
    * 返回 { id, synthId? }：id=行主键；synthId 与 dsh/readmodels.js 同一套规则
    * （ORDER BY rowid 序号合成 e1/q1/d1…），前端私密切换与详情页靠它对回行。 */
@@ -231,20 +231,21 @@ export class Workbench {
       }
       case 'mind': {
         const lvl = (f) => { const v = n(f); if (v != null && !(v >= 0 && v <= 10)) throw new Error(f + ' 是 0–10 自评档位，收到 ' + v); return v; };
-        lastId = this.db.prepare('INSERT INTO symptom_notes (profile_key,recorded_on,kind,itch_level,fatigue_level,night_worse,sleep_breaks,note) VALUES (?,?,?,?,?,?,?,?)')
-          .run(key, day('recordedOn') ?? day('date') ?? new Date().toISOString().slice(0, 10), s('kind', 20) ?? 'itch', lvl('itch'), lvl('fatigue'), n('nightWorse') == null ? null : (n('nightWorse') ? 1 : 0), n('sleepBreaks'), s('note')).lastInsertRowid;
+        const flag = (f) => { const v = n(f); return v == null ? null : (v ? 1 : 0); };
+        lastId = this.db.prepare('INSERT INTO symptom_notes (profile_key,recorded_on,kind,headache_level,stiffness_level,scalp_tenderness,jaw_claud,vision_alert,note) VALUES (?,?,?,?,?,?,?,?,?)')
+          .run(key, day('recordedOn') ?? day('date') ?? new Date().toISOString().slice(0, 10), s('kind', 20) ?? 'headache', lvl('headache'), lvl('stiffness'), flag('scalp'), flag('jaw'), flag('vision'), s('note')).lastInsertRowid;
         return { id: lastId };
       }
       case 'screening': {
         const sk = s('kind', 30);
-        if (!['colonoscopy', 'mrcp', 'fibroscan', 'gallbladder', 'endoscopy'].includes(sk)) throw new Error('screening.kind 须是 colonoscopy/mrcp/fibroscan/gallbladder/endoscopy');
+        if (!['us_temporal', 'biopsy', 'cta', 'petct', 'pmr_followup'].includes(sk)) throw new Error('screening.kind 须是 us_temporal/biopsy/cta/petct/pmr_followup');
         lastId = this.db.prepare('INSERT INTO screening_records (profile_key,kind,done_on,result_text,plan_text,org) VALUES (?,?,?,?,?,?)')
           .run(key, sk, day('doneOn') ?? day('date'), s('result'), s('plan'), s('org', 120)).lastInsertRowid;
         return { id: lastId };
       }
       case 'imaging': {
         const ik = s('kind', 20);
-        if (!['mrcp', 'ercp', 'fibroscan'].includes(ik)) throw new Error('imaging.kind 须是 mrcp/ercp/fibroscan');
+        if (!['us_temporal', 'biopsy', 'cta', 'mra', 'petct'].includes(ik)) throw new Error('imaging.kind 须是 us_temporal/biopsy/cta/mra/petct');
         lastId = this.db.prepare('INSERT INTO imaging_events (profile_key,kind,exam_date,org,finding_text) VALUES (?,?,?,?,?)')
           .run(key, ik, day('examDate') ?? day('date'), s('org', 120), s('finding')).lastInsertRowid;
         return { id: lastId };

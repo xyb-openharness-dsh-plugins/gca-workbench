@@ -2,7 +2,8 @@
  * 用法：node scripts/check-schema-words.mjs [项目目录]
  * 断言：
  *   1. schema/*.sql 全表全列无判读类命名（diagnosis/risk_level/复发性评分/病期/线序/疗效/活动度…）
- *   2. 非肿瘤禁词不出现在 schema（D+N/day_index/粒缺…）
+ *   2. 非肿瘤禁词不出现在 schema（D+N/day_index/粒缺…）；底本（旧病种）症状列名
+ *      （itch_level/scratch/night_worse/sleep_breaks…）在 GCA 语境一并拦下
  *   3. freeze-contract.md 记录的 sha256 与当前文件一致（不一致=冻结被改）
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
@@ -18,7 +19,9 @@ const BANNED = [
   /\bdiagnosis\b/i, /\brisk_level\b/i, /\bactivity_score\b/i, /\bgrade\b/i, /\bstaging?\b/i,
   /\bline_of_treatment\b/i, /\befficacy\b/i, /\bresponse_status\b/i, /\bmrd\b/i,
   /\brelapse_score\b/i, /\bseverity_grade\b/i, /\bday_index\b/i, /\bprognosis\b/i,
-  /病期|线序|疗效|治愈率|复发评分|危险度|预后/
+  /病期|线序|疗效|治愈率|复发评分|危险度|预后/,
+  /* 底本（旧病种）残留（GCA 移植后不该再出现：皮肤症状/乏力语境的旧列名） */
+  /\bitch\b/i, /\bitch_level\b/i, /\bfatigue_level\b/i, /\bscratch\b/i, /\bnight_worse\b/i, /\bsleep_breaks\b/i,
 ]
 const fails = [], oks = []
 let hashLine = ''

@@ -31,7 +31,7 @@ export const META = {
   panelTitle: '小脉宝 GcaPal · GCA 工作台',
   icon: '🫀',
   repository: 'https://github.com/xyb-openharness-dsh-plugins/gca-workbench',
-  description: '本机优先的 GCA 确诊档案、肝功能化验随访、胆管炎发作—缓解记录、MRCP/肠镜影像与共病监测、瘙痒乏力症状与用药、移植评估材料准备工作台',
+  description: '本机优先的 GCA 确诊档案、ESR/CRP 炎症化验随访、发作—缓解记录、颞动脉超声/CTA/MRA/PET-CT 影像复查与 PMR 共病随访、头痛晨僵症状与用药（激素阶梯/托珠单抗）整理工作台',
   audience: 'GCA 患者与授权代记者',
   requirements: '本机数据整理；不做诊断、不给处置建议、不做发作/狭窄进展判定，判断由用户与其医生做出。',
   author: '小脉宝社区贡献者（品牌占位名待晨审追认）',
@@ -217,7 +217,7 @@ export function buildPanel(React, layout, host) {
   function onboardingPrompt() {
     return [
       '你正在协助我使用「小脉宝 GCA 工作台」。它只整理本机资料，不做诊断、不给处置建议、不做病情判定。',
-      '里面是我自己记录的肝功能化验随访、发作—缓解经过、MRCP/肠镜等筛查随访、瘙痒乏力症状与用药清单。',
+      '里面是我自己记录的炎症化验（ESR/CRP 等）随访、发作—缓解经过、颞动脉超声等影像复查、头痛晨僵症状与用药清单。',
       '分工：你帮我汇总已记录的内容、指出缺项；判断和处置由我和我的医生决定。',
       '没有记录的项请写“没有”，不要补写或推测；标了私密的内容不要复述。',
     ].join('\n')

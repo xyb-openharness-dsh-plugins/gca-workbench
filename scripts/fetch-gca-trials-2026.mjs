@@ -4,7 +4,7 @@
  *
  * 唯一入口：unified-trial-mcp（MCP stdio，绝不自己拼 URL、不抓页面）。
  * 不传 sourceIds → 所有注册来源各给一个终态；离线语料只有胰腺癌覆盖，
- * 对 PBC 属「未配置 / 无覆盖」，以 unconfigured 如实进入 manifest，
+ * 对 GCA 属「未配置 / 无覆盖」，以 unconfigured 如实进入 manifest，
  * **不得**写成"已查过、没有试验"。
  *
  * 记录字段形状（unified-trial-mcp v0.3.1，见 SPEC.md §5）：
@@ -31,16 +31,16 @@ const DRY = process.argv.includes('--dry-run')
 const SNAPSHOT_DATE = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)
 
 // 采集口径（与 docs/CLINICAL-DATA-2026.md §1 同步；改口径两处同改）：
-// PBC 双名并存（旧名"原发性胆汁性肝硬化"仍在用）+ 中国患者常以"胆汁淤积""熊去氧胆酸"检索。
+// GCA 多名并存（temporal arteritis / Horton disease 旧名仍在用）+ 治疗语境（托珠单抗/激素）。
 const QUERIES = [
-  { keyword: '原发性硬化性胆管炎', note: '中文现用标准名（GCA）' },
-  { keyword: '硬化性胆管炎', note: '中文宽口径（含继发性，界面分层时会标注）' },
-  { keyword: '原发性硬化性胆管炎 瘙痒', note: '症状语境' },
-  { keyword: 'primary sclerosing cholangitis', note: '英文标准名' },
-  { keyword: 'GCA ursodeoxycholic acid', note: '争议药语境（UDCA）' },
-  { keyword: 'GCA pruritus', note: '瘙痒症状语境' },
-  { keyword: 'sclerosing cholangitis inflammatory bowel disease', note: 'IBD 共病语境' },
-  { keyword: 'GCA cholangiocarcinoma surveillance', note: '监测语境（只作登记，不做判读）' },
+  { keyword: '巨细胞动脉炎', note: '中文现用标准名（GCA）' },
+  { keyword: 'giant cell arteritis', note: '英文标准名' },
+  { keyword: 'temporal arteritis', note: '旧名仍在用（颅动脉语境）' },
+  { keyword: 'Horton disease', note: '旧名语境' },
+  { keyword: 'giant cell arteritis vasculitis', note: '血管炎宽口径' },
+  { keyword: 'giant cell arteritis tocilizumab', note: '治疗语境（托珠单抗）' },
+  { keyword: 'giant cell arteritis prednisone', note: '治疗语境（激素）' },
+  { keyword: 'giant cell arteritis temporal artery ultrasound', note: '检查语境（只作登记，不做判读）' },
 ]
 const PER_SOURCE_LIMIT = 200
 
@@ -305,13 +305,16 @@ async function main() {
     upstream_state TEXT,
     record_count INTEGER,
     error TEXT
-  );`)
+  );
+  -- 对账表：query × source 的有效终态（check-trial-snapshot 按此计数与查重）
+  CREATE TABLE source_statuses (query TEXT, source_id TEXT, state TEXT);`)
   const insTrial = db.prepare(`INSERT INTO trials (record_id, merged_sources, source_id, title, study_type, sponsors,
     registry_numbers, dates, countries, recruitment_status, source_url, retrieved_at, status_note, snapshot_date)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
   const insState = db.prepare(`INSERT INTO source_states (scope, source_id, state, upstream_state, reason_code,
     coverage, completeness, queried, checked_on, note) VALUES (?,?,?,?,?,?,?,?,?,?)`)
   const insQuery = db.prepare('INSERT INTO query_log (query, note, source_id, upstream_state, record_count, error) VALUES (?,?,?,?,?,?)')
+  const insStatus = db.prepare('INSERT INTO source_statuses (query, source_id, state) VALUES (?,?,?)')
 
   db.exec('BEGIN')
   try {
@@ -327,6 +330,7 @@ async function main() {
     for (const qs of perQuery) {
       for (const s of qs.statuses) {
         insQuery.run(qs.query, qs.note, s.sourceId, s.state, s.resultCount ?? null, qs.error ?? null)
+        insStatus.run(qs.query, s.sourceId, STATE_MAP[s.state] ?? 'failed')
       }
       if (qs.error) insQuery.run(qs.query, qs.note, null, 'ERROR', null, qs.error)
     }
@@ -351,14 +355,15 @@ async function main() {
   }
   const dbCount = db.prepare('SELECT COUNT(*) AS n FROM trials').get().n
   const stateRows = db.prepare('SELECT source_id, state, queried FROM source_states ORDER BY source_id').all()
+  const statusRowCount = db.prepare('SELECT COUNT(*) AS n FROM source_statuses').get().n
   db.close()
 
   const queried = stateRows.filter((r) => r.queried === 1).map((r) => r.source_id)
   const unqueried = stateRows.filter((r) => r.queried !== 1).map((r) => r.source_id)
 
   const manifest = {
-    topic: 'pbc',
-    disease: '原发性胆汁性胆管炎（Primary Biliary Cholangitis, PBC）',
+    topic: 'gca',
+    disease: '巨细胞动脉炎（Giant Cell Arteritis, GCA）',
     year: '2026',
     snapshotDate: SNAPSHOT_DATE,
     tool: `unified-trial-mcp @ ${UTS_CLI}`,
@@ -366,13 +371,14 @@ async function main() {
     perSourceLimit: PER_SOURCE_LIMIT,
     recordCount: lines.length,
     dbCount,
+    sourceStatusRows: statusRowCount,
     sourceStates: stateRows,
     queriedSources: queried,
     unqueriedSources: unqueried,
     truncatedSources: stateRows.filter((r) => r.state === 'truncated').map((r) => r.source_id),
     honesty: {
       queriedMeaning: '只有 SUCCESS 与 NO_RESULTS 表示该来源真的被查询并给出答案；其余终态一律不代表"没有试验"',
-      offlineCorpora: 'ChiCTR 离线语料与 XYB 归档仅覆盖胰腺癌；PBC 不适用，落 unconfigured 而不是 0 条',
+      offlineCorpora: 'ChiCTR 离线语料与 XYB 归档仅覆盖胰腺癌；GCA 不适用，落 unconfigured 而不是 0 条',
       statusWording: '登记 ≠ 有效 ≠ 安全 ≠ 可入组；状态一律「登记状态，未核实」',
       mergeRule: '仅同一登记号合并，其余来源并排保留；标题/机构/日期相似不作为合并依据',
       coverageNote: '0 条结果必须带该来源自己的覆盖声明（见 source_states.coverage）',

@@ -10,8 +10,9 @@
  * 纪律：
  * - 被 import 时只导出 `buildDemoProfiles()` 纯数据，**不碰磁盘**（`import.meta.main` 才写文件）。
  * - 不使用 Math.random：用固定种子的 LCG，重跑逐字节可复现。
- * - 演示人名与数值全部虚构，页面必须显著标「合成示例」。
- * - GCA 边界：无分期/线序/疗效判读；发作—缓解区间带；阈值待核不入库；胆管癌风险只作筛查条目。
+ * - 演示人名与数值全部虚构，页面必须显著标「合成示例」；临床试验条目明示 fictional:true。
+ * - GCA 边界：无分期/线序/疗效判读；发作—缓解区间带；阈值待核不入库判定；
+ *   视力预警只记录与提醒，不做判读；共病 PMR 只以「医生已安排的随访」口径呈现。
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -36,12 +37,16 @@ function lcg(seed) {
 const MONTHS_A = ['2026-10', '2026-11']
 const MONTHS_B = ['2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10']
 
-// 参考区间取"演示化验单自带的"值，刻意让两家实验室的上限不同（ALP 120 vs 135），
+// 参考区间取"演示化验单自带的"值，刻意让两家实验室的上限不同（ESR 30 vs 20），
 // 用来证明"不同方法不合并"：跨实验室、跨方法不做差、不连线。
+// 参考数值均为【待核】口径：只抄单子，不在库内做任何判定。
 const LAB_DEFS = {
-  A: { name: '市一院检验科', refs: { ALP: [35, 120], GGT: [7, 45], ALT: [7, 40], AST: [13, 35], TBil: [0, 21], ALB: [40, 55], PLT: [125, 350], Hb: [115, 150], WBC: [3.5, 9.5], ANC: [1.8, 6.3], Cr: [41, 81] } },
-  B: { name: '区中心医院', refs: { ALP: [40, 135], GGT: [8, 50], ALT: [8, 45], AST: [14, 40], TBil: [0, 23], ALB: [39, 54], PLT: [120, 340], Hb: [112, 148], WBC: [3.4, 9.2], ANC: [1.7, 6.0], Cr: [40, 84] } },
+  A: { name: '市一院检验科', refs: { ESR: [0, 30], CRP: [0, 10], Hb: [115, 150], PLT: [125, 350], ALT: [7, 40], FBG: [3.9, 6.1], SBP: null, DBP: null } },
+  B: { name: '区中心医院', refs: { ESR: [0, 20], CRP: [0, 8], Hb: [112, 148], PLT: [120, 340], ALT: [8, 45], FBG: [3.9, 6.1], SBP: null, DBP: null } },
 }
+
+const UNITS = { ESR: 'mm/h', CRP: 'mg/L', Hb: 'g/L', PLT: '10⁹/L', ALT: 'U/L', FBG: 'mmol/L', SBP: 'mmHg', DBP: 'mmHg' }
+const METHODS = { ESR: 'Westergren（魏氏法）', SBP: '诊室血压测量', DBP: '诊室血压测量' }
 
 /** 一条化验：items 里缺 refHigh 的那条刻意留 null，用来演示「单据没印上限」如实留空。 */
 function makeLabs(profileKey, seed, trend, months) {
@@ -50,28 +55,26 @@ function makeLabs(profileKey, seed, trend, months) {
   return months.map((m, i) => {
     const jitter = () => 1 + (rnd() - 0.5) * 0.08
     const base = {
-      ALP: trend.alp[i] * jitter(),
-      GGT: trend.ggt[i] * jitter(),
-      ALT: trend.alt[i] * jitter(),
-      AST: trend.ast[i] * jitter(),
-      TBil: trend.tbil[i] * jitter(),
-      ALB: trend.alb[i] * jitter(),
-      PLT: trend.plt[i] * jitter(),
+      ESR: trend.esr[i] * jitter(),
+      CRP: trend.crp[i] * jitter(),
       Hb: trend.hb[i] * jitter(),
-      WBC: trend.wbc[i] * jitter(),
-      ANC: trend.anc[i] * jitter(),
-      Cr: trend.cr[i] * jitter(),
+      PLT: trend.plt[i] * jitter(),
+      ALT: trend.alt[i] * jitter(),
+      FBG: trend.fbg[i] * jitter(),
+      SBP: trend.sbp[i] * jitter(),
+      DBP: trend.dbp[i] * jitter(),
     }
     const items = Object.entries(base).map(([code, value]) => {
       const ref = def.refs[code]
       // 第一张：模拟"外院单子没印上限"——只给下限，上限 null（不许用通用值补）
-      const missingHigh = i === 0 && code === 'ALP'
+      const missingHigh = i === 0 && code === 'ESR'
       return {
         code,
-        value: Number(value.toFixed(code === 'ALB' ? 1 : 0)),
-        unit: { ALP: 'U/L', GGT: 'U/L', ALT: 'U/L', AST: 'U/L', TBil: 'µmol/L', ALB: 'g/L', PLT: '10⁹/L', Hb: 'g/L', WBC: '10⁹/L', ANC: '10⁹/L', Cr: 'µmol/L' }[code],
-        refLow: ref[0],
-        refHigh: missingHigh ? null : ref[1],
+        value: Number(value.toFixed(code === 'FBG' ? 1 : 0)),
+        unit: UNITS[code],
+        method: METHODS[code] ?? null,
+        refLow: ref ? ref[0] : null,
+        refHigh: missingHigh ? null : (ref ? ref[1] : null),
         lab: missingHigh ? '外院报告（未印上限）' : def.name,
       }
     })
@@ -86,55 +89,54 @@ function buildProfileA() {
     /* label 是"档案名"，不是结论。档案名只描述"这是哪一份"，不描述"结果好不好"。 */
     label: '档案 A · 刚确诊',
     name: '虚构患者甲',
-    age: 47,
+    age: 68,
     sex: '男',
     diagnosedAt: '2026-10-14',
     startedAt: '2026-10-21',
     weightKg: 72,
-    antibodies: { panca: 'untested', ana: 'negative', note: '2026-10 首诊报告抄录；pANCA 未查' },
-    fibrosis: null, // 刚确诊还没做 FibroScan：空态示例
-    ibd: { type: 'untested', note: '肠镜尚未做，医生已安排', colonoscopyLast: null }, // IBD 共病：未知态
+    antibodies: { ana: 'untested', note: '2026-10 首诊报告抄录；ANA 未查（GCA 无特异性抗体，仅鉴别参考）' },
+    imaging: { method: '颞动脉超声（多普勒）', value: '左颞动脉管壁低回声晕环（halo 征）（报告原文抄录）', date: '2026-10-14', note: '报告原文抄录，未判读' },
+    pmr: { status: 'untested', note: 'PMR 症状尚未排查，医生已安排随访', lastVisit: null }, // PMR 共病：未知态
     comorbidity: [{ name: '未见合并症记录', since: null, note: '刚确诊，还没排查完' }],
-    meds: [{ name: '熊去氧胆酸片', doseText: '250 mg × 4 片/日（医生医嘱原文抄录）', freq: '每日 2 次', startDate: '2026-10-21', approval: 'unverified', inUse: true }],
+    meds: [{ name: '泼尼松片', doseText: '45 mg 每日 1 次（晨服，医生医嘱原文抄录；起始 40–60 mg/d【待核】）', freq: '每日 1 次', startDate: '2026-10-21', approval: 'unverified', inUse: true }],
     adherence: [{ month: '2026-10', missed: 0 }, { month: '2026-11', missed: 1 }],
     episodes: [], // 刚确诊，还没有发作记录：空态示例
     symptoms: [
-      { date: '2026-11-01', itch: 3, nightWorse: false, scratch: false, sleepBreaks: 0, fatigue: 2, note: '说不上来，就是没劲' },
-      { date: '2026-10-25', itch: 2, nightWorse: false, scratch: false, sleepBreaks: 0, fatigue: 1, note: '' },
+      { date: '2026-11-01', headache: 6, stiffness: 2, scalp: true, jaw: false, vision: false, note: '左颞部胀痛，梳头都疼' },
+      { date: '2026-10-25', headache: 3, stiffness: 1, scalp: false, jaw: false, vision: false, note: '' },
     ],
     screening: [
-      { type: 'mrcp', date: '2026-10-14', result: 'MRCP：肝内外胆管多节段狭窄伴扩张（报告原文抄录）', detail: '确诊依据之一' },
-      { type: 'gallbladder', date: '2026-10-14', result: '超声：胆囊壁稍毛糙，未见结石', detail: '' },
-      { type: 'colonoscopy', date: null, result: null, detail: '医生已安排，待做' }, // 未知值/待办示例
+      { type: 'us_temporal', date: '2026-10-14', result: '颞动脉超声：左颞动脉管壁低回声晕环（halo 征）（报告原文抄录）', detail: '确诊依据之一' },
+      { type: 'biopsy', date: null, result: null, detail: '医生已安排，待做' }, // 未知值/待办示例
     ],
     questions: [
-      { id: 'q1', text: 'ALP 多少算降下来了？我的目标值是什么？', done: false },
-      { id: 'q2', text: '肠镜什么时候做？要提前准备什么？', done: false },
-      { id: 'q3', text: '如果发烧寒战，我应该怎么处理？', done: false },
+      { id: 'q1', text: 'ESR 降到多少算控制住？我的目标值是什么？', done: false },
+      { id: 'q2', text: '激素要怎么减量？减量节奏谁说了算？', done: false },
+      { id: 'q3', text: '如果突然看东西模糊，我应该怎么处理？', done: false },
     ],
     documents: [
-      { id: 'd1', name: '2026-10 MRCP 报告.pdf', date: '2026-10-14', parsed: false },
-      { id: 'd2', name: '2026-11 肝功能.pdf', date: '2026-11-08', parsed: true },
+      { id: 'd1', name: '2026-10 颞动脉超声报告.pdf', date: '2026-10-14', parsed: false },
+      { id: 'd2', name: '2026-11 化验单.pdf', date: '2026-11-08', parsed: true },
     ],
     trials: [
-      { id: 't1', title: '【虚构示例】GCA 瘙痒症状管理登记研究', source: 'ctgov', phase: '登记', status: '登记状态，未核实', area: '上海' },
+      { id: 't1', title: '【虚构示例】GCA 症状负担登记研究', source: 'ctgov', phase: '登记', status: '登记状态，未核实', area: '上海', fictional: true },
     ],
     pathway: [
       {
-        d: '2026-10-14', phase: '确诊', text: '体检 ALP 升高，MRCP 见胆管多节段狭窄后确诊',
+        d: '2026-10-14', phase: '确诊', text: '新发头痛伴头皮压痛，颞动脉超声见晕环征后确诊',
         detail: {
           regimen: { summary: '尚未开始用药', items: [['方案', '无'], ['说明', '确诊当次未开药']] },
-          metrics: { summary: 'ALP 312 U/L（单据未印上限）', items: [['ALP', '312 U/L'], ['GGT', '224 U/L']] },
-          imaging: { summary: 'MRCP：肝内外胆管多节段狭窄伴扩张', items: [['报告原文', '肝内外胆管多发节段性狭窄，狭窄上游胆管扩张']] },
+          metrics: { summary: 'ESR 76 mm/h（Westergren，单据未印上限）', items: [['ESR', '76 mm/h'], ['CRP', '68 mg/L']] },
+          imaging: { summary: '颞动脉超声：左颞动脉低回声晕环（halo 征）', items: [['报告原文', '左颞动脉管壁低回声晕环，管腔未见闭塞']] },
           ae: { summary: '无记录', items: [['说明', '此阶段未开始用药，未记副作用']] },
           support: { summary: '无记录', items: [['说明', '未记录支持措施']] },
         },
       },
       {
-        d: '2026-10-21', phase: '开始 UDCA', text: '医生开了熊去氧胆酸，医嘱原文如记录',
+        d: '2026-10-21', phase: '开始激素', text: '医生开了泼尼松，医嘱原文如记录',
         detail: {
-          regimen: { summary: '熊去氧胆酸 250 mg × 4 片/日', items: [['药名', '熊去氧胆酸片'], ['剂量原文', '250 mg × 4 片/日'], ['频次', '每日 2 次'], ['获批状态', '未核实']] },
-          metrics: { summary: '2026-11 复查 ALP 268 U/L', items: [['2026-11 ALP', '268 U/L'], ['2026-11 GGT', '196 U/L']] },
+          regimen: { summary: '泼尼松 45 mg 每日 1 次（晨服）', items: [['药名', '泼尼松片'], ['剂量原文', '45 mg 每日 1 次（晨服）'], ['频次', '每日 1 次'], ['获批状态', '未核实']] },
+          metrics: { summary: '2026-11 复查 ESR 52 mm/h、CRP 31 mg/L', items: [['2026-11 ESR', '52 mm/h'], ['2026-11 CRP', '31 mg/L']] },
           imaging: { summary: '本阶段未复查影像', items: [['说明', '无记录，不等于没做']] },
           ae: { summary: '无记录', items: [['说明', '未记录']] },
           support: { summary: '"这个病我第一次听说"', items: [['患者原话', '这个病我第一次听说，医生说的名字我都记不住']] },
@@ -144,117 +146,127 @@ function buildProfileA() {
   }
 }
 
-/* B 档案：8 年随访，发作 3 次、化验 6 个月、用药与共病都多。 */
+/* B 档案：8 年随访，发作 4 次、化验 6 个月、激素阶梯与共病都多。 */
 function buildProfileB() {
   return {
     key: 'B',
     label: '档案 B · 长期随访',
     name: '虚构患者乙',
-    age: 55,
+    age: 72,
     sex: '女',
     diagnosedAt: '2018-09-05',
     startedAt: '2018-09-18',
-    weightKg: 64,
-    antibodies: { panca: 'positive', ana: 'positive', note: '2018 年报告抄录' },
-    fibrosis: { method: 'FibroScan（瞬时弹性成像）', value: '12.6 kPa', date: '2026-03-11', note: '报告原文抄录，未判读' },
-    ibd: { type: 'ulcerative-colitis', note: '溃疡性结肠炎，消化科随访中', colonoscopyLast: '2025-06-18' },
+    weightKg: 58,
+    antibodies: { ana: 'negative', note: '2018 年报告抄录；GCA 无特异性抗体，ANA 仅鉴别参考' },
+    imaging: { method: '颞动脉超声（多普勒）', value: '右颞动脉管壁低回声晕环（halo 征），较前对照变薄（报告原文抄录）', date: '2026-03-11', note: '报告原文抄录，未判读' },
+    pmr: { status: 'diagnosed', note: '风湿性多肌痛（PMR），风湿科已安排随访', lastVisit: '2026-04-30' },
     comorbidity: [
-      { name: '溃疡性结肠炎', since: '2019', note: '消化科，美沙拉嗪维持' },
+      { name: '风湿性多肌痛（PMR）', since: '2020', note: '风湿科，医生已安排随访' },
       { name: '甲状腺功能减退', since: '2021', note: '内分泌科，左甲状腺素 50 µg' },
     ],
     meds: [
-      { name: '熊去氧胆酸胶囊', doseText: '250 mg × 6 粒/日', freq: '每日 3 次', startDate: '2018-09-18', approval: 'unverified', inUse: true },
-      { name: '美沙拉嗪缓释片', doseText: '1 g 每日 2 次（消化科医嘱）', freq: '每日 2 次', startDate: '2019-04-02', approval: 'unverified', inUse: true },
+      { name: '泼尼松片', doseText: '55 mg 每日 1 次（晨服，起始 40–60 mg/d【待核】，医嘱原文抄录）', freq: '每日 1 次', startDate: '2018-09-18', approval: 'unverified', inUse: false },
+      { name: '泼尼松片', doseText: '40 mg 每日 1 次（减量阶梯，医嘱原文抄录）', freq: '每日 1 次', startDate: '2018-12-10', approval: 'unverified', inUse: false },
+      { name: '泼尼松片', doseText: '20 mg 每日 1 次（减量阶梯，医嘱原文抄录）', freq: '每日 1 次', startDate: '2019-06-20', approval: 'unverified', inUse: false },
+      { name: '泼尼松片', doseText: '7.5 mg 每日 1 次（减量阶梯，医嘱原文抄录）', freq: '每日 1 次', startDate: '2020-03-15', approval: 'unverified', inUse: false },
+      { name: '泼尼松片', doseText: '5 mg 每日 1 次（维持剂量，医嘱原文抄录）', freq: '每日 1 次', startDate: '2020-09-01', approval: 'unverified', inUse: true },
+      { name: '托珠单抗注射液', doseText: '162 mg 皮下注射 每周 1 次【待核：间隔以医生医嘱为准】', freq: '每周 1 次', startDate: '2025-02-20', approval: 'unverified', inUse: true },
+      { name: '阿司匹林肠溶片', doseText: '100 mg 每日 1 次（小剂量，医生安排）', freq: '每日 1 次', startDate: '2025-02-25', approval: 'unverified', inUse: true },
       { name: '左甲状腺素钠片', doseText: '50 µg 每日 1 次', freq: '每日 1 次（另一科开）', startDate: '2021-05-01', approval: 'unverified', inUse: true },
     ],
     adherence: [{ month: '2026-05', missed: 0 }, { month: '2026-06', missed: 1 }, { month: '2026-07', missed: 0 }, { month: '2026-08', missed: 3 }, { month: '2026-09', missed: 0 }, { month: '2026-10', missed: 1 }],
     episodes: [
       {
-        id: 'e1', start: '2023-02-10', end: '2023-02-24', hospital: '市一院',
-        signs: '发热 38.6℃、寒战、尿色加深', labsNote: '胆红素升高（当时化验原件未存）',
-        treatment: '住院抗感染治疗 10 天（医生处置原文大意）', actionPlan: null,
-        note: '第一次发作，当时不知道这就是胆管炎', visibility: 'shared',
+        id: 'e1', start: '2021-04-12', end: '2021-05-02', hospital: '市一院',
+        signs: '新发双侧颞部头痛、头皮压痛明显', labsNote: 'ESR 88 mm/h、CRP 56 mg/L（当时化验原件未存，口头转述）',
+        treatment: '住院甲泼尼龙静脉治疗后改口服（医生处置原文大意）', actionPlan: null,
+        note: '第一次发作，当时不知道这就是 GCA 活动', visibility: 'shared',
       },
       {
-        id: 'e2', start: '2025-01-18', end: '2025-01-27', hospital: '区中心医院',
-        signs: '发热、右上腹痛', labsNote: '白细胞与胆红素升高',
-        treatment: '住院抗感染；出院后医生安排 ERCP 球囊扩张（2025-02-20）', actionPlan: '医生给的计划原文：若再次出现发热寒战或尿色明显加深，当天联系肝胆科值班电话，不要等到复诊',
+        id: 'e2', start: '2023-02-10', end: '2023-02-24', hospital: '区中心医院',
+        signs: '头痛复发伴下颌跛行（嚼东西咬不动）', labsNote: 'ESR 76 mm/h',
+        treatment: '激素加量口服；医生调整减量节奏（原文大意）', actionPlan: '医生给的计划原文：若再次出现头痛明显加重或看东西模糊，当天联系风湿科值班电话，不要等到复诊',
         note: '这次记住了先打电话', visibility: 'shared',
       },
       {
-        id: 'e3', start: '2026-04-30', end: '2026-05-12', hospital: '市一院',
-        signs: '低热、乏力加重', labsNote: '胆红素 38 µmol/L',
-        treatment: '门诊抗感染后好转；医生调了复查节奏', actionPlan: '同上次医生计划（2025-01 记录）',
+        id: 'e3', start: '2025-01-18', end: '2025-01-27', hospital: '市一院',
+        signs: '右眼一过性视物模糊，半小时自行缓解（按医生要求当日就诊）', labsNote: 'CRP 47 mg/L',
+        treatment: '医生安排加用托珠单抗（2025-02-20 起，医嘱原文见用药）', actionPlan: '同上次医生计划（2023-02 记录）；另嘱：视力症状再发当日就诊',
+        note: '视力症状这次及时去了医院', visibility: 'shared',
+      },
+      {
+        id: 'e4', start: '2026-04-30', end: '2026-05-12', hospital: '市一院',
+        signs: '肩髋晨僵加重（PMR 症状）伴低热', labsNote: 'ESR 34 mm/h、CRP 21 mg/L',
+        treatment: '门诊调整激素后好转；医生调了复查节奏', actionPlan: '同上次医生计划（2023-02 记录）',
         note: '', visibility: 'shared',
       },
     ],
     symptoms: [
-      { date: '2026-10-05', itch: 3, nightWorse: false, scratch: false, sleepBreaks: 0, fatigue: 3, note: '下午就没劲了' },
-      { date: '2026-09-18', itch: 2, nightWorse: false, scratch: false, sleepBreaks: 0, fatigue: 3, note: '' },
-      { date: '2026-08-22', itch: 4, nightWorse: true, scratch: false, sleepBreaks: 1, fatigue: 2, note: '' },
-      { date: '2026-07-11', itch: 2, nightWorse: false, scratch: false, sleepBreaks: 0, fatigue: 2, note: '' },
-      { date: '2026-06-09', itch: 5, nightWorse: true, scratch: true, sleepBreaks: 2, fatigue: 3, note: '天热更痒' },
-      { date: '2026-05-16', itch: 3, nightWorse: false, scratch: false, sleepBreaks: 0, fatigue: 2, note: '' },
+      { date: '2026-10-05', headache: 2, stiffness: 2, scalp: false, jaw: false, vision: false, note: '晨僵半小时，活动后好' },
+      { date: '2026-09-18', headache: 3, stiffness: 2, scalp: true, jaw: false, vision: false, note: '' },
+      { date: '2026-08-22', headache: 5, stiffness: 3, scalp: true, jaw: true, vision: false, note: '颞部跳痛，嚼东西发酸' },
+      { date: '2026-07-11', headache: 2, stiffness: 1, scalp: false, jaw: false, vision: true, note: '一过性视物模糊，当天按医生要求就诊' },
+      { date: '2026-06-09', headache: 4, stiffness: 3, scalp: false, jaw: false, vision: true, note: '午后视物模糊数分钟，医生让记录下来' },
+      { date: '2026-05-16', headache: 1, stiffness: 2, scalp: false, jaw: false, vision: false, note: '' },
     ],
     screening: [
-      { type: 'colonoscopy', date: '2025-06-18', result: '肠镜：横结肠可见一段轻度炎性改变（报告原文）', detail: '消化科：病理未见异型，按医嘱 1–2 年复查【待核：具体间隔以医生安排为准】' },
-      { type: 'mrcp', date: '2025-02-20', result: 'MRCP：肝外胆管狭窄段较前对照，上游扩张（报告原文）', detail: 'ERCP 扩张前评估' },
-      { type: 'fibroscan', date: '2026-03-11', result: 'FibroScan 12.6 kPa（报告原文）', detail: '未判读' },
-      { type: 'gallbladder', date: '2025-11-07', result: '超声：胆囊息肉 3 mm，未见结石（报告原文）', detail: '医生说按他的节奏复查' },
-      { type: 'endoscopy', date: '2024-11-20', result: '胃镜：食管下段轻度静脉曲张（报告原文）', detail: '医生建议定期复查' },
+      { type: 'us_temporal', date: '2026-03-11', result: '颞动脉超声：右颞动脉晕环较前对照变薄（报告原文）', detail: '按医生节奏复查，未判读' },
+      { type: 'cta', date: '2025-06-18', result: 'CTA：升主动脉及主动脉弓管壁增厚较前相仿（报告原文）', detail: '大血管评估，医生安排时做' },
+      { type: 'petct', date: null, result: null, detail: '医生已安排，待做' },
+      { type: 'pmr_followup', date: '2026-04-30', result: '风湿科 PMR 随访：晨僵情况记录（就诊记录抄录）', detail: '医生说按他的节奏复查' },
     ],
     questions: [
-      { id: 'q1', text: '下次肠镜该什么时候做？间隔是按年算吗？', done: false },
-      { id: 'q2', text: '胆囊息肉 3 mm 要紧吗？', done: false },
-      { id: 'q3', text: '甲减的药和肝的药一起吃要注意什么？', done: false },
-      { id: 'q4', text: 'ERCP 之后这次 MRCP 结果说明什么？', done: true },
+      { id: 'q1', text: '激素还要吃多久？减量节奏怎么定？', done: false },
+      { id: 'q2', text: '打完托珠单抗有点发热要紧吗？', done: false },
+      { id: 'q3', text: '阿司匹林和我的其他药要错开吃吗？', done: false },
+      { id: 'q4', text: '这次颞动脉超声结果和上次比怎么样？', done: true },
     ],
     documents: [
-      { id: 'd1', name: '2026-03 FibroScan.pdf', date: '2026-03-11', parsed: true },
-      { id: 'd2', name: '2025-06 肠镜.pdf', date: '2025-06-18', parsed: true },
-      { id: 'd3', name: '2025-02 MRCP.pdf', date: '2025-02-20', parsed: false },
+      { id: 'd1', name: '2026-03 颞动脉超声.pdf', date: '2026-03-11', parsed: true },
+      { id: 'd2', name: '2025-06 CTA.pdf', date: '2025-06-18', parsed: true },
+      { id: 'd3', name: '2025-01 出院小结.pdf', date: '2025-01-27', parsed: false },
     ],
     trials: [
-      { id: 't1', title: '【虚构示例】GCA 长期随访观察研究', source: 'ictrp', phase: '观察性', status: '登记状态，未核实', area: '广州' },
-      { id: 't2', title: '【虚构示例】GCA 胆管炎发作频率研究', source: 'ctgov', phase: '登记', status: '登记状态，未核实', area: '北京' },
+      { id: 't1', title: '【虚构示例】GCA 长期随访观察研究', source: 'ictrp', phase: '观察性', status: '登记状态，未核实', area: '广州', fictional: true },
+      { id: 't2', title: '【虚构示例】GCA 复发频率与托珠单抗研究', source: 'ctgov', phase: '登记', status: '登记状态，未核实', area: '北京', fictional: true },
     ],
     pathway: [
       {
-        d: '2018-09-18', phase: '确诊并开始 UDCA', text: 'MRCP 提示胆管多节段狭窄，确诊后开始单药',
+        d: '2018-09-18', phase: '确诊并开始激素', text: '颞部头痛伴头皮压痛，超声与活检后确诊，开始泼尼松',
         detail: {
-          regimen: { summary: '熊去氧胆酸 250 mg × 6 粒/日', items: [['药名', '熊去氧胆酸胶囊'], ['剂量原文', '250 mg × 6 粒/日'], ['获批状态', '未核实']] },
-          metrics: { summary: '确诊时 ALP 310 U/L', items: [['2018-09 ALP', '310 U/L'], ['2018-09 TBil', '21 µmol/L']] },
-          imaging: { summary: 'MRCP：肝内外胆管多节段狭窄', items: [['报告原文', '肝内外胆管多发节段性狭窄伴上游扩张']] },
+          regimen: { summary: '泼尼松 55 mg 每日 1 次（晨服）', items: [['药名', '泼尼松片'], ['剂量原文', '55 mg 每日 1 次（晨服）'], ['获批状态', '未核实']] },
+          metrics: { summary: '确诊时 ESR 92 mm/h、CRP 61 mg/L', items: [['2018-09 ESR', '92 mm/h'], ['2018-09 CRP', '61 mg/L']] },
+          imaging: { summary: '颞动脉超声：右颞动脉低回声晕环（halo 征）', items: [['报告原文', '右颞动脉管壁低回声晕环']] },
           ae: { summary: '无记录', items: [['说明', '无记录']] },
           support: { summary: '无记录', items: [['说明', '无记录']] },
         },
       },
       {
-        d: '2023-02-10', phase: '第一次发作', text: '发热寒战住院，才知道这叫胆管炎',
+        d: '2023-02-10', phase: '第一次发作', text: '头痛复发伴下颌跛行，激素加量后缓解',
         detail: {
-          regimen: { summary: '维持原用药', items: [['方案', '未变更']] },
-          metrics: { summary: '胆红素升高（原件未存）', items: [['说明', '当时化验原件未留存，只有口头转述']] },
-          imaging: { summary: '住院期间超声', items: [['说明', '报告未存档']] },
+          regimen: { summary: '激素加量（医嘱原文见调药记录）', items: [['方案', '泼尼松加量，医生原文照录']] },
+          metrics: { summary: 'ESR 76 mm/h、CRP 39 mg/L', items: [['说明', '当时化验原件未留存，只有口头转述']] },
+          imaging: { summary: '住院期间颞动脉超声', items: [['说明', '报告未存档']] },
           ae: { summary: '无新增', items: [['说明', '无记录']] },
-          support: { summary: '"根本不知道这两个病是一伙的"', items: [['患者原话', '根本不知道胆管炎和肠子的病是一伙的']] },
-        },
-      },
-      {
-        d: '2025-02-20', phase: 'ERCP 球囊扩张', text: '发作后医生安排 ERCP 球囊扩张狭窄段',
-        detail: {
-          regimen: { summary: '维持原用药', items: [['方案', '未变更']] },
-          metrics: { summary: '术前胆红素 42 µmol/L，术后 1 个月 24 µmol/L', items: [['术前 TBil', '42 µmol/L'], ['术后 TBil', '24 µmol/L']] },
-          imaging: { summary: 'ERCP 术中造影 + 术后 MRCP', items: [['报告原文', '肝外胆管狭窄段扩张后通畅，上游扩张减轻']] },
-          ae: { summary: '术后轻度腹胀', items: [['记录', '术后两天腹胀，自行缓解']] },
           support: { summary: '"医生给了发作时的电话"', items: [['患者原话', '这次医生给了值班电话，心里踏实多了']] },
         },
       },
       {
-        d: '2026-03-11', phase: '弹性成像复查', text: '按医生节奏做 FibroScan 与化验',
+        d: '2025-02-20', phase: '加用托珠单抗', text: '视力症状发作后，医生安排加用托珠单抗',
+        detail: {
+          regimen: { summary: '托珠单抗 162 mg 皮下注射 每周 1 次【待核】', items: [['药名', '托珠单抗注射液'], ['剂量原文', '162 mg 皮下注射 每周 1 次'], ['获批状态', '未核实']] },
+          metrics: { summary: '发作时 CRP 47 mg/L，加用后 1 个月 12 mg/L', items: [['发作时 CRP', '47 mg/L'], ['1 个月后 CRP', '12 mg/L']] },
+          imaging: { summary: 'CTA：主动脉管壁增厚较前相仿', items: [['报告原文', '升主动脉及主动脉弓管壁增厚较前相仿']] },
+          ae: { summary: '注射当晚低热', items: [['记录', '注射当晚低热，次日自行缓解']] },
+          support: { summary: '"记下来就不慌"', items: [['患者原话', '把每次的数记下来，去医院就不慌了']] },
+        },
+      },
+      {
+        d: '2026-03-11', phase: '影像复查与化验评估', text: '按医生节奏复查颞动脉超声与化验',
         detail: {
           regimen: { summary: '维持原用药', items: [['方案', '未变更']] },
-          metrics: { summary: 'ALP 179 U/L，胆红素 18 µmol/L', items: [['2026-03 ALP', '179 U/L'], ['2026-03 TBil', '18 µmol/L']] },
-          imaging: { summary: 'FibroScan 12.6 kPa', items: [['报告原文', '12.6 kPa（未判读）']] },
+          metrics: { summary: 'ESR 24 mm/h、CRP 8 mg/L', items: [['2026-03 ESR', '24 mm/h'], ['2026-03 CRP', '8 mg/L']] },
+          imaging: { summary: '颞动脉超声：晕环较前对照变薄', items: [['报告原文', '右颞动脉晕环较前对照变薄（未判读）']] },
           ae: { summary: '无新增', items: [['说明', '无记录']] },
           support: { summary: '"记下来就不慌"', items: [['患者原话', '把每次的数记下来，去医院就不慌了']] },
         },
@@ -268,17 +280,14 @@ export function buildDemoProfiles() {
   const A = buildProfileA()
   const B = buildProfileB()
   A.labs = makeLabs('A', 20241101, {
-    alp: [312, 268], ggt: [224, 196], alt: [66, 52], ast: [48, 40],
-    tbil: [16, 14], alb: [44, 44], plt: [210, 206], hb: [142, 141],
-    wbc: [6.0, 5.8], anc: [3.2, 3.1], cr: [68, 69],
+    esr: [76, 52], crp: [68, 31], hb: [118, 124], plt: [383, 331],
+    alt: [28, 26], fbg: [5.2, 5.6], sbp: [138, 132], dbp: [82, 78],
   }, MONTHS_A)
   B.labs = makeLabs('B', 20241102, {
-    alp: [310, 245, 198, 188, 179, 178], ggt: [220, 186, 160, 151, 143, 146],
-    alt: [52, 46, 41, 38, 36, 40], ast: [48, 43, 39, 36, 34, 37],
-    tbil: [21, 19, 18, 17, 17, 18], alb: [40, 40, 39, 40, 39, 39],
-    plt: [118, 110, 101, 96, 94, 92], hb: [119, 117, 115, 116, 114, 115],
-    wbc: [4.1, 3.9, 4.0, 3.8, 4.0, 3.9], anc: [2.2, 2.1, 2.2, 2.0, 2.1, 2.1],
-    cr: [70, 71, 69, 72, 70, 71],
+    esr: [38, 33, 29, 26, 24, 25], crp: [14, 11, 9, 8, 7, 8],
+    hb: [124, 126, 127, 125, 126, 127], plt: [260, 248, 240, 246, 251, 247],
+    alt: [30, 34, 42, 38, 35, 36], fbg: [6.1, 5.8, 6.3, 6.0, 5.9, 6.1],
+    sbp: [136, 132, 130, 134, 131, 133], dbp: [80, 78, 77, 80, 79, 78],
   }, MONTHS_B)
   /* 补齐读模型会返回、而上面手写数据里想省掉的列（形状由 demo-data 决定）。 */
   for (const p of [A, B]) {
@@ -305,7 +314,7 @@ function snapshotMetaFromManifest() {
     let relevant = null
     try {
       const lines = readFileSync(join(ROOT, 'research', 'gca', 'trials-2026.jsonl'), 'utf8').split('\n').filter(Boolean)
-      const RE = /硬化性胆管炎|sclerosing cholangitis|\bGCA\b/i
+      const RE = /巨细胞动脉炎|giant cell arteritis|temporal arteritis|horton|血管炎|\bGCA\b/i
       relevant = lines.filter((l) => { try { return RE.test(JSON.parse(l).title || '') } catch { return false } }).length
     } catch { relevant = null }
     return {
@@ -337,7 +346,8 @@ export async function buildDemoDatabase(file, profiles) {
   const { readdirSync, readFileSync } = await import('node:fs')
   const { seedDemo } = await import('../dsh/demo.js')
   mkdirSync(dirname(file), { recursive: true })
-  try { rmSync(file, { force: true }) } catch { /* 首次构建 */ }
+  /* 连 -wal/-shm 一起清：只删主文件时旧 WAL 会在重开后回放旧 schema（实测踩过）。 */
+  try { rmSync(file, { force: true }); rmSync(file + '-wal', { force: true }); rmSync(file + '-shm', { force: true }) } catch { /* 首次构建 */ }
   const db = new DatabaseSync(file)
   db.exec('PRAGMA foreign_keys = ON')
   db.exec('PRAGMA journal_mode = WAL')

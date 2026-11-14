@@ -35,17 +35,17 @@ test('派生值读时算：缓解中第 N 天 / 距上次发作 N 天 / 近 90 �
   assert.equal(a.followupDayN, 23, '随访第 N 天 = 距开始用药日 2026-10-21 的天数（读时算）');
 
   const b = rm.readDerivedStatus(db, 'B', '2026-11-13');
-  /* B 档案 3 次发作全部已记缓解：最近一次 2026-05-12 → 缓解中第 186 天、距上次发作 185 天 */
+  /* B 档案 4 次发作全部已记缓解：最近一次 2026-05-12 → 缓解中第 186 天、距上次发作 185 天 */
   assert.equal(b.mode, '缓解中');
   assert.equal(b.dayN, 186);
   assert.equal(b.sinceLast, 185);
   assert.equal(b.nearCount, 0, '近 90 天窗口（自 2026-08-15 起）内无发作');
-  assert.equal(b.sinceLastColonoscopyMonths, 17, '距上次肠镜 2025-06-18 满 17 个月（读时算，无排程列）');
+  assert.equal(b.sinceLastImagingMonths, 8, '距上次影像复查（颞动脉超声 2026-03-11）满 8 个月（读时算，无排程列）');
 });
 
 test('派生值：发作中形态（end IS NULL）与私密发作不进聚合', async () => {
   const { db, rm } = await seeded();
-  db.prepare("INSERT INTO episode_events (profile_key, start_date, end_date, signs_text, is_private, ver) VALUES ('A', '2026-11-01', NULL, '测试发热', 0, 1)").run();
+  db.prepare("INSERT INTO episode_events (profile_key, start_date, end_date, signs_text, is_private, ver) VALUES ('A', '2026-11-01', NULL, '测试头痛加重', 0, 1)").run();
   const st = rm.readDerivedStatus(db, 'A', '2026-11-13');
   assert.equal(st.mode, '发作中');
   assert.equal(st.dayN, 13, '发作中第 N 天 = 距 start +1');
@@ -68,7 +68,7 @@ test('派生值：无排程列（screening_records 无 next_due，复发/缓解�
 
 test('三出口：export/ai 出口在读模型层剥掉私密行；dashboard 返回全量含标记', async () => {
   const { db, rm } = await seeded();
-  db.prepare("INSERT INTO symptom_notes (profile_key, recorded_on, itch_level, note, is_private, ver) VALUES ('B', '2026-11-12', 9, '【私密注入】', 1, 1)").run();
+  db.prepare("INSERT INTO symptom_notes (profile_key, recorded_on, headache_level, note, is_private, ver) VALUES ('B', '2026-11-12', 9, '【私密注入】', 1, 1)").run();
   for (const exit of ['export', 'ai']) {
     const b = rm.bootstrapForExit(db, exit);
     for (const p of b.profiles) {
@@ -105,20 +105,20 @@ test('section_titles / metric_defs 读出（分节标题进表，不用 subjects
   assert.equal(titles.length, 1);
   assert.equal(titles[0].title, '筛查随访');
   const defs = rm.readMetricDefs(db);
-  assert.deepEqual(defs.map((m) => m.key), ['ALP', 'GGT', 'TBil', 'ALT', 'AST', 'ALB', 'PLT', 'Hb', 'WBC', 'ANC', 'Cr']);
+  assert.deepEqual(defs.map((m) => m.key), ['ESR', 'CRP', 'Hb', 'PLT', 'ALT', 'FBG', 'SBP', 'DBP']);
 });
 
 test('单实体读法：labs 带可比组（method+org）、episodes id 确定性合成、documents parse 状态', async () => {
   const { db, rm } = await seeded();
   const labs = rm.readLabs(db, 'B');
-  assert.ok(labs.length >= 60, 'B 档案 6 个月 × 11 项化验');
+  assert.ok(labs.length >= 40, 'B 档案 6 个月 × 8 项化验');
   assert.ok(labs.every((l) => typeof l.org === 'string'), '可比组 org 随行');
   const eps = rm.readEpisodes(db, 'B');
-  assert.deepEqual(eps.map((e) => e.id), ['e1', 'e2', 'e3'], '发作 id 按 rowid 序合成（与 demo-data 一致）');
+  assert.deepEqual(eps.map((e) => e.id), ['e1', 'e2', 'e3', 'e4'], '发作 id 按 rowid 序合成（与 demo-data 一致）');
   const docs = rm.readDocuments(db, 'A');
   assert.deepEqual(docs.map((d) => d.parsed), [false, true], 'parse_state 直出（unparsed/parsed，无判读）');
   const scr = rm.readScreening(db, 'A');
-  const colo = scr.find((s) => s.kind === 'colonoscopy');
-  assert.equal(colo.doneOn, null, '肠镜「已安排未做」= done_on 显式 NULL');
-  assert.ok(scr.find((s) => s.kind === 'mrcp').result.includes('节段狭窄'), '筛查结果照录报告原文');
+  const biopsy = scr.find((s) => s.kind === 'biopsy');
+  assert.equal(biopsy.doneOn, null, '颞动脉活检「已安排未做」= done_on 显式 NULL');
+  assert.ok(scr.find((s) => s.kind === 'us_temporal').result.includes('晕环'), '筛查结果照录报告原文');
 });

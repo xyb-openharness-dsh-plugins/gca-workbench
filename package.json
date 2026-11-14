@@ -1,7 +1,7 @@
 {
   "name": "@xyb-community/gca-workbench",
-  "version": "0.2.1",
-  "description": "本机优先的 GCA 确诊档案、肝功能化验随访、胆管炎发作—缓解记录、MRCP/肠镜影像与共病监测、瘙痒乏力症状与用药、移植评估材料准备工作台",
+  "version": "0.1.0",
+  "description": "本机优先的 GCA 确诊档案、ESR/CRP 炎症化验随访、发作—缓解记录、颞动脉超声/CTA/MRA/PET-CT 影像复查与 PMR 共病随访、头痛晨僵症状与用药（激素阶梯/托珠单抗）整理工作台",
   "private": true,
   "type": "module",
   "main": "./dsh/index.js",

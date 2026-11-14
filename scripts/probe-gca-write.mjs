@@ -111,11 +111,11 @@ const clickNav = (page, view, sub) => page.evaluate((v, s) => {
 
   /* PR3 写 mind 记录 → reload → 记录仍在、备注逐字一致 */
   const NOTE = 'PR3 持久化探针备注XYZ'
-  await clickNav(page, 'symptoms', 'itch')
+  await clickNav(page, 'symptoms', 'headache')
   await sleep(400)
-  await page.evaluate(() => { const el = document.getElementById('itch'); if (el) { el.value = '7'; el.dispatchEvent(new Event('input', { bubbles: true })) } })
+  await page.evaluate(() => { const el = document.getElementById('headache'); if (el) { el.value = '7'; el.dispatchEvent(new Event('input', { bubbles: true })) } })
   await page.evaluate((n) => { const el = document.getElementById('note'); if (el) el.value = n }, NOTE)
-  await page.click('#save-itch')
+  await page.click('#save-headache')
   await sleep(1200)
   const toast1 = await page.evaluate(() => (document.getElementById('toast') || {}).textContent || '')
   await page.reload({ waitUntil: 'networkidle0' })

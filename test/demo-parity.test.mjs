@@ -1,7 +1,7 @@
 /* 演示唯一源 parity 测试：readBootstrap（db）与 demo/build-demo-data.mjs → prototypes/v0.2/demo-data.js 形状一致
  * 口径：canonical JSON（递归删除 null/undefined 键后逐字段比对）——demo-data 手写数据
  * 允许可选键缺省与显式 null 两种写法，读模型输出固定键集（null 显式），两边语义等价。
- * 两套档案：A 刚确诊（化验 2 个月、无发作记录）、B 长期随访（化验 6 个月、发作 3 次）。
+ * 两套档案：A 刚确诊（化验 2 个月、无发作记录）、B 长期随访（化验 6 个月、发作 4 次）。
  */
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -71,11 +71,12 @@ test('parity: 化验可比组随行返回（org 原样陈列，不合并跨机�
   assert.equal(bb.labs.length, 6, 'B 档案 6 个月化验行')
   const orgs = new Set(bb.labs.flatMap((r) => r.items.map((i) => i.lab)))
   assert.ok(orgs.has('区中心医院'), 'B 档案含区中心医院化验（可比组按机构陈列）')
-  /* 第一张 A 档化验单刻意缺 ALP 上限（单据没印上限 → ref_high NULL，不用通用值补） */
+  /* 第一张 A 档化验单刻意缺 ESR 上限（单据没印上限 → ref_high NULL，不用通用值补） */
   const aFirst = b.profiles.find((p) => p.key === 'A').labs[0]
-  const alp = aFirst.items.find((i) => i.code === 'ALP')
-  assert.equal(alp.refHigh, null, 'A 档首张 ALP 上限显式 null')
-  assert.ok(alp.lab.includes('外院'), '外院单子来源随行')
+  const esr = aFirst.items.find((i) => i.code === 'ESR')
+  assert.equal(esr.refHigh, null, 'A 档首张 ESR 上限显式 null')
+  assert.ok(esr.lab.includes('外院'), '外院单子来源随行')
+  assert.equal(esr.method, 'Westergren（魏氏法）', 'ESR 方法字段随行（可比组=method+org）')
 })
 
 test('parity: trialMatch 与 demo-data 同一份 lib/trial-match 口径（B 档 2 张卡）', async () => {

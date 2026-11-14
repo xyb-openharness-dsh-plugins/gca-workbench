@@ -76,17 +76,14 @@ const NUM = /^[<>≥≤]?\s*\d+(?:\.\d+)?$/;
 
 /** GCA 指标字典（名称 → code）：与 metric_defs 同源（不在库内判定参考范围）。 */
 export const METRIC_DICT = [
-  { code: 'ALP', names: ['碱性磷酸酶', 'ALP', 'AKP'] },
-  { code: 'GGT', names: ['γ-谷氨酰转肽酶', 'GGT', '谷氨酰转肽酶', 'r-谷氨酰转肽酶'] },
-  { code: 'TBil', names: ['总胆红素', 'TBil', 'TBIL', 'T-Bil'] },
-  { code: 'ALT', names: ['丙氨酸氨基转移酶', 'ALT', '谷丙转氨酶'] },
-  { code: 'AST', names: ['天门冬氨酸氨基转移酶', 'AST', '谷草转氨酶'] },
-  { code: 'ALB', names: ['白蛋白', 'ALB'] },
-  { code: 'PLT', names: ['PLT', '血小板'] },
+  { code: 'ESR', names: ['ESR', '血沉', '红细胞沉降率'] },
+  { code: 'CRP', names: ['CRP', 'C反应蛋白', 'C-反应蛋白'] },
   { code: 'Hb', names: ['HB', '血红蛋白', '血色素', 'HGB'] },
-  { code: 'WBC', names: ['WBC', '白细胞'] },
-  { code: 'ANC', names: ['ANC', '中性粒细胞绝对值', '中性粒细胞'] },
-  { code: 'Cr', names: ['肌酐', 'CR', 'Creatinine'] },
+  { code: 'PLT', names: ['PLT', '血小板'] },
+  { code: 'ALT', names: ['丙氨酸氨基转移酶', 'ALT', '谷丙转氨酶'] },
+  { code: 'FBG', names: ['空腹血糖', 'FBG', 'GLU'] },
+  { code: 'SBP', names: ['收缩压', 'SBP'] },
+  { code: 'DBP', names: ['舒张压', 'DBP'] },
 ];
 
 /** 行式文本 → 化验候选（纯本地；日期行 + "名称 数值 单位" 模式）。 */

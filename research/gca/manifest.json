@@ -1,0 +1,110 @@
+{
+  "topic": "gca",
+  "disease": "巨细胞动脉炎（Giant Cell Arteritis, GCA）",
+  "year": "2026",
+  "snapshotDate": "2026-11-14",
+  "tool": "unified-trial-mcp @ /Users/qinxiaoqiang/Downloads/unified_search_trials/dist/src/cli/main.js",
+  "queries": [
+    {
+      "keyword": "巨细胞动脉炎",
+      "note": "中文现用标准名（GCA）"
+    },
+    {
+      "keyword": "giant cell arteritis",
+      "note": "英文标准名"
+    },
+    {
+      "keyword": "temporal arteritis",
+      "note": "旧名仍在用（颅动脉语境）"
+    },
+    {
+      "keyword": "Horton disease",
+      "note": "旧名语境"
+    },
+    {
+      "keyword": "giant cell arteritis vasculitis",
+      "note": "血管炎宽口径"
+    },
+    {
+      "keyword": "giant cell arteritis tocilizumab",
+      "note": "治疗语境（托珠单抗）"
+    },
+    {
+      "keyword": "giant cell arteritis prednisone",
+      "note": "治疗语境（激素）"
+    },
+    {
+      "keyword": "giant cell arteritis temporal artery ultrasound",
+      "note": "检查语境（只作登记，不做判读）"
+    }
+  ],
+  "perSourceLimit": 200,
+  "recordCount": 221,
+  "dbCount": 221,
+  "sourceStatusRows": 48,
+  "sourceStates": [
+    {
+      "source_id": "chictr_online",
+      "state": "failed",
+      "queried": 0
+    },
+    {
+      "source_id": "chictr_pancreatic_archive",
+      "state": "unconfigured",
+      "queried": 0
+    },
+    {
+      "source_id": "chinadrugtrials",
+      "state": "ready",
+      "queried": 1
+    },
+    {
+      "source_id": "ctv",
+      "state": "ready",
+      "queried": 1
+    },
+    {
+      "source_id": "ictrp",
+      "state": "truncated",
+      "queried": 1
+    },
+    {
+      "source_id": "xyb_chinadrugtrials_archive",
+      "state": "ready",
+      "queried": 1
+    }
+  ],
+  "queriedSources": [
+    "chinadrugtrials",
+    "ctv",
+    "ictrp",
+    "xyb_chinadrugtrials_archive"
+  ],
+  "unqueriedSources": [
+    "chictr_online",
+    "chictr_pancreatic_archive"
+  ],
+  "truncatedSources": [
+    "ictrp"
+  ],
+  "honesty": {
+    "queriedMeaning": "只有 SUCCESS 与 NO_RESULTS 表示该来源真的被查询并给出答案；其余终态一律不代表\"没有试验\"",
+    "offlineCorpora": "ChiCTR 离线语料与 XYB 归档仅覆盖胰腺癌；GCA 不适用，落 unconfigured 而不是 0 条",
+    "statusWording": "登记 ≠ 有效 ≠ 安全 ≠ 可入组；状态一律「登记状态，未核实」",
+    "mergeRule": "仅同一登记号合并，其余来源并排保留；标题/机构/日期相似不作为合并依据",
+    "coverageNote": "0 条结果必须带该来源自己的覆盖声明（见 source_states.coverage）"
+  },
+  "files": {
+    "trials-2026.jsonl": {
+      "sha256": "5958299cda55563e46a35b2690ba4b1013bfc98714b892a7a8aff7f118b81aff"
+    },
+    "gca_trials_2026.sqlite": {
+      "sha256": "6130a14f6f5f2d2b9c565ac101cf52df65b8797f1af30d6c5b9cbfda848cd8d8"
+    }
+  },
+  "relevant": {
+    "count": 149,
+    "rule": "标题命中 巨细胞动脉炎 / giant cell arteritis / temporal arteritis / horton / 血管炎 / GCA 之一（与 demo/build-demo-data.mjs 同一规则）；仅候选池口径，不构成入组判定",
+    "countedOn": "2026-11-14"
+  }
+}

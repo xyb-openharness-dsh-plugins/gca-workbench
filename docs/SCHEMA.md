@@ -1,56 +1,42 @@
-# 数据主体—关系—表
+# 数据主体—关系—表（GCA 实例草案）
+
+版本 v0.1 · 2026-11-14 · 自动签认状态：HTML 确认前为候选模型；确认对应模块后复核并落实生产 schema/API。
+
+## 实体与表
 
 | 实体 | 稳定 ID | 主体/外键 | 核心字段/类型 | 约束/索引 | 来源/确认 | 生命周期 |
 | --- | --- | --- | --- | --- | --- | --- |
-| subject | ... | ... | ... | ... | ... | ... |
-| document | ... | subject | relative_path/hash/mime | ... | original | ... |
-| observation | ... | subject/metric_definition | time/value/unit | ... | candidate/confirmed | ... |
-| artifact | ... | task/snapshot | relative_path/hash/format | ... | template version | ... |
+| subject | subj_id | — | 名称、出生年代段（不存精确生日）、备注 | unique(subj_id) | 用户建档 | 软删=in_use=false |
+| document | doc_id | subject | relative_path/hash/mime/来源机构/日期 | hash unique | original/candidate | 不可变，更正=新版本 |
+| lab_observation | obs_id | subject/metric_definition | time/value/unit/方法/机构/可比组 | (subject,metric,time) | candidate→confirmed | 只增不改 |
+| metric_definition | metric_id | — | 名称（ESR/CRP/血常规等）、单位、分类 | unique(metric_id) | 内置目录+用户扩展 | in_use |
+| dose_segment | dose_id | subject/drug_id | 起始日期/剂量 mg/d/医嘱原文/私密 | (subject,drug,start_date) | candidate→confirmed | 只增；更正=新版本 |
+| drug_record | drug_id | subject | 药名（泼尼松/托珠单抗等）、途径、频次、医嘱原文、版本 | (subject,drug,revision) | candidate→confirmed | 版本化 |
+| episode | ep_id | subject | 开始/缓解时间、症状集（头痛/头皮压痛/下颌跛行/肢体跛行/晨僵）、体温、就医、行动计划原文、私密 | (subject,start_time) | candidate→confirmed | 只增不改 |
+| symptom_entry | sym_id | subject | 类别（视力预警/头面/全身）、原文、日期、记录人、私密 | (subject,date,category) | 用户录入 | 只增不改 |
+| imaging_record | img_id | subject | 类型（颞动脉超声/CTA/MRA/PET-CT/活检）、日期、所见原文（如晕轮征）、来源 | (subject,type,date) | candidate→confirmed | 只增不改 |
+| screening_followup | sf_id | subject | 条目（PMR 随访等）、医生安排原文、最近日期、间隔 | (subject,entry) | 医生安排口径 | 只增不改 |
+| vision_alert | va_id | subject/episode | 症状原文、发生时间、提醒展示日期（仅记录不判读） | (subject,occurred_at) | 用户录入 | 只增不改 |
+| trial_candidate | tc_id | subject/nct_id | NCTId、标题、状态、快照日期、收藏、匹配理由 | (subject,nct_id) | snapshot+用户收藏 | 收藏可删，快照只读 |
 
-实体图：...
-扩展策略：定义目录新增 vs 结构迁移的边界；核心关系不塞入任意 JSON。
-迁移 ledger/旧库 fixture/备份/事务/回滚兼容：...
-数据根选择、相对路径校验、公共数据和私人数据分离：...
-统一读模型与跨页一致性验收：...
+## 关键语义约束
 
-## 持久化与记忆选型（互动确认）
+- dose_segment 是「段」不是「点」：mg/d + 起始日期，阶梯表读时按日期拼接。
+- ESR/CRP 不生成活动度派生列；vision_alert 只记录不判读。
+- episode 症状集为受控枚举 + 原文备注；不塞任意 JSON 进核心关系。
 
-等级 A/B/C/D 与理由：...
-预计规模/增长、常用查询、并发写入者、离线要求：...
-SQLite 或 JSON 的实际运行条件与备选方案：...
+## 扩展策略与迁移
 
-| 数据类别 | 权威位置/格式 | 读写责任 | 来源/revision | 索引/失效/保留规则 |
-| --- | --- | --- | --- | --- |
-| 已确认业务事实 | ... | ... | ... | ... |
-| 文件与产物 | ... | ... | ... | ... |
-| 偏好/摘要/检索记忆（可选） | ... | ... | ... | ... |
-| 可重建内存缓存/派生索引 | ... | ... | ... | ... |
-
-同步：提交后更新、幂等键、重试、积压可见性：...
-检索：主体/工作区过滤、来源核对、过期与冲突处理：...
-纠正/删除：缓存与记忆失效、删除传播：...
-外部记忆的实际 API/版本/部署/发送范围；不可用时的本地路径：...
-性能证据：代表数据、查询延迟/启动、内存测量与目标：...
-确认人/日期、未决项及对应验收 ID：...
+定义目录新增 vs 结构迁移边界；迁移 ledger/旧库 fixture/备份/事务/回滚兼容逐项留证据。数据根选择、相对路径校验、公共/私人数据分离；统一读模型与跨页一致性验收。SQLite（schema/0001_initial.sql）为主存储；偏好/摘要为可重建缓存。
 
 ## 前端与业务流程变化矩阵（建库前必填）
 
-领域事实/关系、工作流定义与实例、页面读模型/偏好边界：...
-稳定ID/revision、流程定义版本/已有实例、状态转换与跳过/重开/取消语义：...
-
 | 变化情境 | 不变的事实/关系 | 配置/投影/API变化 | 迁移/旧记录读取与恢复 | 验收证据 |
 | --- | --- | --- | --- | --- |
-| 改导航/布局/同一事实多视图 | ... | ... | ... | ... |
-| 新字段/指标/可选记录类型 | ... | ... | ... | ... |
-| 步骤插入/跳过/重开/并行 | ... | ... | ... | ... |
-| 来源更正/删除/摘要与缓存失效 | ... | ... | ... | ... |
-| 旧数据库/旧API客户端升级 | ... | ... | ... | ... |
+| 改导航/布局/同一事实多视图 | 全部实体 | 读模型/组件映射 | 无迁移 | 截图+探针 |
+| 新字段/指标/可选记录类型 | 既有表 | metric_definition/表新增列 | 补充迁移 000x | 迁移日志 |
+| 流程插入/跳过/重开 | 实体不变 | 流程定义版本 | 实例按版本读取 | 实走记录 |
+| 来源更正/删除/缓存失效 | 只增不改约束 | 读模型失效重建 | 更正=新版本 | probe 断言 |
+| 旧数据库/旧API客户端升级 | schema 兼容 | API 版本 | fixture 回放 | 兼容测试 |
 
-不把UI模拟数据当表，不为每个步骤复制事实；不通过无限JSON、重置库或无理由的全量事件溯源代替设计。详见docs/14-HTML-AND-DATA-CONTRACT.md。
-
-
-## UI/流程变化的承受能力（必填）
-
-领域实体/证据/主体/状态/版本是稳定核心；UI通过命令用例写入和版本化读模型读取。不能按Tab复制事实或把整页state当业务存储。列出：页面拆合/移位、流程先后改变、新增普通指标、来源更正、候选→接受、未知字段/枚举、隐私派生与快照失效时需要改哪层、是否迁移、兼容/恢复方式。
-
-HTML确认前是候选模型/模拟adapter，确认对应模块后复核并落实生产schema/API；仅布局/字段顺序变化不能迫使用户清库。JSON扩展有类型/schema/version/上限，核心关系保留外键与约束；写入有revision/幂等/事务。记录真实迁移/并发/故障证据，未执行标未验证。
+不把 UI 模拟数据当表；HTML 确认前是候选模型/模拟 adapter。详见 docs/14-HTML-AND-DATA-CONTRACT.md。

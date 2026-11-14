@@ -1,29 +1,29 @@
-# DEV-PLAN · gca-workbench（原发性硬化性胆管炎 GCA）
+# DEV-PLAN · gca-workbench（巨细胞动脉炎 GCA）
 
-版本：v0.1（M0/M1 草案）· 认领模式：无人值守夜班（晨审追认）
+版本 v0.1 · 2026-11-14 · 自动签认状态：M0/M1 草案，夜班无人值守模式，晨审未追认。
 
 ## 一、认领记录
 
-- 病种：原发性硬化性胆管炎（GCA, Primary Sclerosing Cholangitis）
-- BACKLOG 定位：罕见病目录 #68 · R2 非肿瘤慢性病型（FSHD 形态）· T2
-- 认领 issue：xyb-openharness-dsh-plugins/.github #73（2026-11-12 23:15 提交，/claim 后 claimed 标签已挂；机器人首答缺 claim 标签，实为发帖时未带标签，补挂后重试即通过——已记入 LESSONS 待回流）
-- 仓：xyb-openharness-dsh-plugins/gca-workbench（私有，2026-11-12 建仓）
-- BACKLOG 快照：本机 night-shift-20261113/BACKLOG-snapshot-20261112.md（快照时点 2026-11-12 23:09，快照明显滞后于实际进度，认领前已与本地仓 + 组织仓列表 + 开放 issue 三方对账）
+- 病种：巨细胞动脉炎（GCA, Giant Cell Arteritis）
+- BACKLOG 定位：罕见病目录 #35（86 罕见病诊疗指南 2025 年版收录）· R2 非肿瘤慢性病型 · T2；NCCN 不适用（非肿瘤）
+- 认领 issue：xyb-openharness-dsh-plugins/.github #77（/claim 流程沿用家族口径；issue 须带 claim 标签，见 DEV-REQUIREMENTS §六#1）
+- 仓：gca-workbench（从家族脚手架移植初始化）
+- BACKLOG 快照：认领前与组织仓列表 + 开放 issue 对账；快照时点留痕于本节。
 
 ## 二、选择理由（BACKLOG §4 口径）
 
-1. **优先级**：剩余未认领池中 R2 慢性病族最充裕；GCA 在《86 个罕见病诊疗指南（2025 年版）》内（401 页，T2），指南体量为剩余候选最大。
-2. **随访天然结构化**：肝功能化验（ALP/胆红素/转氨酶）按周期复查、MRCP/FibroScan 影像随访、胆管炎发作—缓解区间、IBD 共病肠镜监测——与 R2「确诊档案 + 功能与日常 + 并发症筛查 + 医保与资源」四块形态直接吻合。
-3. **差异化明显**：组织内肝胆家族既有仓均为肿瘤语义（biliary-tract-workbench、liver-cancer-workbench）；pbc-workbench 是免疫性胆管炎（AMA+、UDCA 应答评估），GCA 为胆管纤维化狭窄（MRCP 狭窄、ERCP、IBD 共病），监测路径与患者日常语言不重叠。差异化矩阵见 DIFF-MATRIX.md。
+1. **优先级**：R2 非肿瘤慢性病族候选；GCA 收录于《86 个罕见病病种诊疗指南（2025 年版）》（T2），指南体量支持结构化随访设计。
+2. **随访天然结构化**：ESR/CRP 按周期化验、泼尼松剂量阶梯（mg/d 按日期）、发作—缓解区间、影像复查（颞动脉超声/CTA/MRA/PET-CT）、共病 PMR 随访——与 R2「确诊档案 + 功能与日常 + 症状与发作 + 医保与资源」形态吻合。
+3. **差异化明显**：同为血管炎的 takayasu-workbench（大动脉炎：40 岁以下、主动脉及一级分支、四肢血压/脉搏差异）与本仓（GCA：50 岁以上、颅动脉为主、视力预警）人群与监测对象不重叠；与 ANCA 相关血管炎（小血管、PR3/MPO）和 pbc 与肝胆底本仓的器官与语义均不同。差异化矩阵见 DIFF-MATRIX.md。
 
 ## 三、里程碑推进
 
-按家族 M0–M9 里程碑推进；夜班时间盒 2026-11-12 23:00 → 2026-11-13 08:00。每个里程碑本地 commit 并更新 PROGRESS.md；闸口按 G1/G2/G3/V1/V2/V3 逐项实测。
+按家族 M0–M9 里程碑推进；每个里程碑本地 commit 并更新 PROGRESS.md；闸口按 G1/G2/G3/V1/V2/V3 逐项实测。
 
 ## 四、无人值守边界
 
-允许：认领 issue 与 /claim、建私有仓、本地 commit、push 本仓、项目内文件与脚本、装本机 DSH Desktop profile。
-冻结备稿：M7 的 tag 与 GitHub release、M8 的 BACKLOG 回填 PR——只备草稿存 docs/release-draft/，不发布。
+允许：认领 issue 与 /claim、建仓、本地 commit、push 本仓、项目内文件与脚本、装本机 DSH Desktop profile。
+冻结备稿：tag 与 GitHub release、BACKLOG 回填 PR——只备草稿存 docs/release-draft/，不发布。
 禁止：公开发布、向他人仓库推送、删除既有仓库或 issue。
 
 ## 五、可回退默认值（无人值守模式，晨审追认）
@@ -31,14 +31,14 @@
 | # | 决策点 | 夜班默认值 | 追认时替换为 |
 | --- | --- | --- | --- |
 | 1 | 服务主体 | GCA 患者本人为记录主体；家属照护协助为次级视角 | 用户访谈后定 |
-| 2 | 病程覆盖 | 确诊后全病程：确诊依据 → 长期随访 → 发作与并发症 → 共病监测；不含移植后（移植评估材料整理含，移植后管理不含，属另一阶段） | 用户确认 |
-| 3 | 品牌名 | 小脉宝 GcaPal（占位，GcaPal 与 pbc 小管宝撞形） | 用户定名后全局替换 |
-| 4 | MinerU | 未接入（M5 六部件做接口契约与降级路径，真实解析待接入后验证） | 接入后补验证 |
-| 5 | 模型 | glm-3.5-flash（免费档，夜班唯一可用模型） | — |
-| 6 | 试验线 | 保留：ClinicalTrials.gov 实测 159 条（query.cond=primary sclerosing cholangitis，快照 2026-11-12） | — |
+| 2 | 病程覆盖 | 确诊后全病程：确诊依据 → 激素阶梯 → 发作与视力预警 → 共病 PMR → 长期随访；不含其他疾病管理 | 用户确认 |
+| 3 | 品牌名 | 小脉宝 GcaPal（占位） | 用户定名后全局替换 |
+| 4 | MinerU | 未接通，如实标注；先做接口契约与降级路径 | 接入后补验证 |
+| 5 | 模型 | 会话可用模型 | 用户指定 |
+| 6 | 试验线 | 保留：ClinicalTrials.gov query.cond=giant cell arteritis，联网实测 195 条（2026-11-14）；仓内快照未建，通道失败如实 FAILED | M5 建档回填 |
 
 ## 六、已知风险
 
-1. **GCA 与「肿瘤语义红线」的边界**：GCA 患者胆管癌与结直肠癌风险升高，随访含肿瘤监测——但工作台按非肿瘤病种组织：以「医生已安排的筛查随访」口径呈现筛查条目，全站禁用分期/线序/疗效排序词；判读归医生。
-2. **PBC 撞形**：pbc-workbench 先行且同为胆管疾病，文档与界面文案全部 GCA 原创，差异化矩阵逐条列清。
+1. **视力预警表述边界**：当日就医提醒是记录器上的占位文案，临床审核前不得加重语气或给分诊建议。
+2. **与大动脉炎仓撞形**：两仓同为血管炎、共用 ESR/CRP 与激素阶梯结构；页面语义（颅动脉 vs 主动脉、视力预警 vs 四肢脉搏差异）必须全原创，标题重名率实测见 DIFF-MATRIX.md。
 3. **0 患者访谈、0 临床审核**：如实标注；阈值与求助短语全部【待核】占位。

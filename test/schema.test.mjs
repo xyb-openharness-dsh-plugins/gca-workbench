@@ -56,9 +56,9 @@ test('schema：ORDER BY rowid 稳定读序 + 显式 null（episode end NULL=发�
 
 test('schema：更正链（ver + superseded_by）与 in_use 候选语义', () => {
   const db = build()
-  db.prepare("INSERT INTO metric_defs (key, title, category, unit) VALUES ('ALP', '碱性磷酸酶 ALP', 'cholestasis', 'U/L')").run()
-  db.prepare("INSERT INTO lab_results (profile_key, metric_key, value, ver) VALUES ('p1', 'ALP', 318, 1)").run()
-  db.prepare("INSERT INTO lab_results (profile_key, metric_key, value, ver, superseded_by) VALUES ('p1', 'ALP', 258, 2, 1)").run()
+  db.prepare("INSERT INTO metric_defs (key, title, category, unit) VALUES ('ESR', '血沉 ESR', 'inflam', 'mm/h')").run()
+  db.prepare("INSERT INTO lab_results (profile_key, metric_key, value, ver) VALUES ('p1', 'ESR', 76, 1)").run()
+  db.prepare("INSERT INTO lab_results (profile_key, metric_key, value, ver, superseded_by) VALUES ('p1', 'ESR', 52, 2, 1)").run()
   const vers = db.prepare("SELECT ver, superseded_by FROM lab_results WHERE profile_key='p1' ORDER BY ver").all()
   assert.deepEqual(vers.map(r => r.ver), [1, 2], '更正=新增版本，历史保留')
   assert.equal(vers[1].superseded_by, 1, 'superseded_by 可链（v2 指向 v1）')
@@ -74,16 +74,16 @@ test('schema：freeze-contract sha256 与 0001 文件一致', () => {
   assert.ok(contract.includes(sha), 'freeze-contract 里的 sha256 必须与 0001_initial.sql 实际 hash 一致')
 })
 
-test('schema：0002 补充（profile_facts 结构化档案字段 + symptom_notes.scratch 档位事实）', () => {
+test('schema：0002 补充（profile_facts 结构化档案字段 + symptom_notes.vision_alert 档位事实）', () => {
   const db = build()
   const cols = db.prepare('PRAGMA table_info(symptom_notes)').all().map(c => c.name)
-  assert.ok(cols.includes('scratch'), 'symptom_notes.scratch 存在（0002 ALTER ADD）')
+  assert.ok(cols.includes('vision_alert'), 'symptom_notes.vision_alert 存在（0002 ALTER ADD）')
   db.prepare("INSERT INTO profile_facts (profile_key, fact_key, fact_value, ver) VALUES ('p1', 'age', '47', 1)").run()
   db.prepare("INSERT INTO profile_facts (profile_key, fact_key, fact_value, ver) VALUES ('p1', 'age', '48', 2)").run()
   const rows = db.prepare("SELECT fact_value FROM profile_facts WHERE profile_key='p1' AND fact_key='age' ORDER BY ver").all()
   assert.deepEqual(rows.map(r => r.fact_value), ['47', '48'], '更正=新 ver，历史行保留')
-  db.prepare("INSERT INTO symptom_notes (profile_key, recorded_on, itch_level, scratch) VALUES ('p1', '2026-11-01', 3, 1)").run()
-  assert.equal(db.prepare('SELECT scratch FROM symptom_notes').get().scratch, 1, '抓痕档位事实可写')
+  db.prepare("INSERT INTO symptom_notes (profile_key, recorded_on, headache_level, vision_alert) VALUES ('p1', '2026-11-01', 3, 1)").run()
+  assert.equal(db.prepare('SELECT vision_alert FROM symptom_notes').get().vision_alert, 1, '视力预警档位事实可写')
 })
 
 test('演示数据（唯一源）可整体装载且两套档案字段齐备', () => {
@@ -95,7 +95,7 @@ test('演示数据（唯一源）可整体装载且两套档案字段齐备', ()
   for (const p of data.profiles) {
     for (const k of required) assert.ok(p[k] !== undefined, `${p.key} 缺 ${k}`)
   }
-  assert.ok(data.profiles[1].episodes.length >= 3, 'B 档发作 3 次')
+  assert.ok(data.profiles[1].episodes.length >= 4, 'B 档发作 4 次')
   assert.ok(data.profiles[1].labs.length >= 6, 'B 档化验 6 个月')
   assert.equal(data.profiles[0].episodes.length, 0, 'A 档刚确诊：发作空态示例')
   const a = data.profiles[0], b = data.profiles[1]
@@ -109,7 +109,7 @@ test('metric_defs 与 GCA 指标语境一致（五组系列、无阈值列）', 
   demo.seedDemo(db, [])
   const defs = db.prepare('SELECT * FROM metric_defs ORDER BY ord').all()
   const cats = new Set(defs.map(d => d.category))
-  assert.deepEqual([...cats], ['cholestasis', 'hepatocell', 'synthesis', 'blood', 'renal'], 'GCA 五组系列')
+  assert.deepEqual([...cats], ['inflam', 'hemogram', 'steroid', 'metabolic', 'vital'], 'GCA 五组系列')
   for (const d of defs) {
     assert.ok(d.unit, `${d.key} 有单位`)
     assert.ok(!/threshold|cutoff|limit_judg/i.test(Object.keys(d).join(',')), '无阈值判定列')

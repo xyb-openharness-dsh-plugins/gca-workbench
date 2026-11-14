@@ -7,7 +7,7 @@
  *   - 私密在 bootstrap 默认不过滤——返回全量、私密标记随行返回（episodes/symptoms 的 visibility），
  *     页面按原型口径显示；导出与 AI 两个出口走 bootstrapForExit，在读模型层剥掉私密行
  *     （三出口过滤中的两出口在服务层强制生效，看板摘要聚合只算共享行）；
- *   - 派生值（随访第 N 天 / 距上次发作 N 天 / 近 90 天发作次数 / 距上次肠镜 N 月）读时算
+ *   - 派生值（随访第 N 天 / 距上次发作 N 天 / 近 90 天发作次数 / 距上次影像复查 N 月）读时算
  *     （readDerivedStatus），不落库、无判读列；
  *   - 化验可比组 = method + org：读模型按机构（demo 的 lab 字段）原样陈列，不合并画线；
  *   - id 还原：演示字符串 id（e1/q1/d1/t1）不落库，读时按 rowid 序确定性合成；
@@ -72,13 +72,15 @@ export function readSubject(db, pr) {
     }
     labIndex.get(date).items.push({
       code: l.metric_key, value: l.value ?? l.value_text ?? null, unit: l.unit ?? '',
-      refLow: l.ref_low, refHigh: l.ref_high, lab: l.org || '',
+      method: l.method ?? null, refLow: l.ref_low, refHigh: l.ref_high, lab: l.org || '',
     });
   }
 
   const symptoms = db.prepare('SELECT * FROM symptom_notes WHERE profile_key = ? ORDER BY rowid').all(key).map((s) => ({
-    date: s.recorded_on ?? null, itch: s.itch_level, nightWorse: !!s.night_worse,
-    scratch: !!s.scratch, sleepBreaks: s.sleep_breaks, fatigue: s.fatigue_level,
+    date: s.recorded_on ?? null, headache: s.headache_level, stiffness: s.stiffness_level,
+    scalp: s.scalp_tenderness == null ? null : !!s.scalp_tenderness,
+    jaw: s.jaw_claud == null ? null : !!s.jaw_claud,
+    vision: s.vision_alert == null ? null : !!s.vision_alert,
     note: s.note ?? '', visibility: s.is_private ? 'private' : 'shared',
   }));
 
@@ -106,7 +108,7 @@ export function readSubject(db, pr) {
     age: facts.age ?? null, sex: facts.sex ?? null,
     diagnosedAt: facts.diagnosedAt ?? null, startedAt: facts.startedAt ?? null,
     weightKg: facts.weightKg ?? null, antibodies: facts.antibodies ?? null,
-    fibrosis: facts.fibrosis ?? null, ibd: facts.ibd ?? null,
+    imaging: facts.imaging ?? null, pmr: facts.pmr ?? null,
     comorbidity: facts.comorbidity ?? [],
     meds, adherence: facts.adherence ?? [],
     episodes, symptoms, screening, questions, documents,
@@ -117,7 +119,7 @@ export function readSubject(db, pr) {
 
 /**
  * 派生状态（读时算，不落库）：缓解/发作中第 N 天、距上次发作 N 天、近 90 天发作次数、
- * 随访第 N 天（距开始用药日）、距上次肠镜 N 月（最近一次已做肠镜）。
+ * 随访第 N 天（距开始用药日）、距上次影像复查 N 月（最近一次已做颞动脉超声）。
  * 只统计共享行（私密发作不进聚合），私密条数单独返回。
  * @param {string} today YYYY-MM-DD（读模型不写死"今天"）
  */
@@ -146,16 +148,16 @@ export function readDerivedStatus(db, profileKey, today) {
   const anchor = facts.startedAt || facts.diagnosedAt || null;
   const since = dayBetween(anchor, today);
   out.followupDayN = anchor && since != null ? Math.max(0, since) : null;
-  /* 距上次肠镜 N 月：只报「医生已做」的事实间隔（screening_records 无排程列） */
-  const cols = db.prepare("SELECT done_on FROM screening_records WHERE profile_key = ? AND kind='colonoscopy' AND done_on IS NOT NULL ORDER BY rowid").all(profileKey)
+  /* 距上次影像复查 N 月：只报「医生已做」的事实间隔（screening_records 无排程列） */
+  const imgs = db.prepare("SELECT done_on FROM screening_records WHERE profile_key = ? AND kind='us_temporal' AND done_on IS NOT NULL ORDER BY rowid").all(profileKey)
     .map((r) => r.done_on).sort();
-  const lastColo = cols[cols.length - 1] || null;
-  if (lastColo) {
-    const d1 = new Date(lastColo + 'T00:00:00');
+  const lastImg = imgs[imgs.length - 1] || null;
+  if (lastImg) {
+    const d1 = new Date(lastImg + 'T00:00:00');
     const d2 = new Date(today + 'T00:00:00');
-    out.sinceLastColonoscopyMonths = Math.max(0, (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth()));
+    out.sinceLastImagingMonths = Math.max(0, (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth()));
   } else {
-    out.sinceLastColonoscopyMonths = null;
+    out.sinceLastImagingMonths = null;
   }
   return out;
 }
@@ -221,8 +223,10 @@ export function readMeds(db, key) {
 
 export function readSymptoms(db, key) {
   return db.prepare('SELECT * FROM symptom_notes WHERE profile_key = ? ORDER BY rowid').all(key)
-    .map((s) => ({ id: s.id, date: s.recorded_on ?? null, itch: s.itch_level, fatigue: s.fatigue_level,
-      nightWorse: !!s.night_worse, scratch: !!s.scratch, sleepBreaks: s.sleep_breaks,
+    .map((s) => ({ id: s.id, date: s.recorded_on ?? null, headache: s.headache_level, stiffness: s.stiffness_level,
+      scalp: s.scalp_tenderness == null ? null : !!s.scalp_tenderness,
+      jaw: s.jaw_claud == null ? null : !!s.jaw_claud,
+      vision: s.vision_alert == null ? null : !!s.vision_alert,
       note: s.note ?? '', private: !!s.is_private }));
 }
 

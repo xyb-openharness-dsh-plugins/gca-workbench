@@ -7,21 +7,25 @@
       "key": "A",
       "label": "档案 A · 刚确诊",
       "name": "虚构患者甲",
-      "age": 47,
+      "age": 68,
       "sex": "男",
       "diagnosedAt": "2026-10-14",
       "startedAt": "2026-10-21",
       "weightKg": 72,
       "antibodies": {
-        "panca": "untested",
-        "ana": "negative",
-        "note": "2026-10 首诊报告抄录；pANCA 未查"
+        "ana": "untested",
+        "note": "2026-10 首诊报告抄录；ANA 未查（GCA 无特异性抗体，仅鉴别参考）"
       },
-      "fibrosis": null,
-      "ibd": {
-        "type": "untested",
-        "note": "肠镜尚未做，医生已安排",
-        "colonoscopyLast": null
+      "imaging": {
+        "method": "颞动脉超声（多普勒）",
+        "value": "左颞动脉管壁低回声晕环（halo 征）（报告原文抄录）",
+        "date": "2026-10-14",
+        "note": "报告原文抄录，未判读"
+      },
+      "pmr": {
+        "status": "untested",
+        "note": "PMR 症状尚未排查，医生已安排随访",
+        "lastVisit": null
       },
       "comorbidity": [
         {
@@ -34,9 +38,9 @@
       ],
       "meds": [
         {
-          "name": "熊去氧胆酸片",
-          "doseText": "250 mg × 4 片/日（医生医嘱原文抄录）",
-          "freq": "每日 2 次",
+          "name": "泼尼松片",
+          "doseText": "45 mg 每日 1 次（晨服，医生医嘱原文抄录；起始 40–60 mg/d【待核】）",
+          "freq": "每日 1 次",
           "startDate": "2026-10-21",
           "approval": "unverified",
           "inUse": true
@@ -56,76 +60,69 @@
       "symptoms": [
         {
           "date": "2026-11-01",
-          "itch": 3,
-          "nightWorse": false,
-          "scratch": false,
-          "sleepBreaks": 0,
-          "fatigue": 2,
-          "note": "说不上来，就是没劲",
+          "headache": 6,
+          "stiffness": 2,
+          "scalp": true,
+          "jaw": false,
+          "vision": false,
+          "note": "左颞部胀痛，梳头都疼",
           "visibility": "shared"
         },
         {
           "date": "2026-10-25",
-          "itch": 2,
-          "nightWorse": false,
-          "scratch": false,
-          "sleepBreaks": 0,
-          "fatigue": 1,
+          "headache": 3,
+          "stiffness": 1,
+          "scalp": false,
+          "jaw": false,
+          "vision": false,
           "note": "",
           "visibility": "shared"
         }
       ],
       "screening": [
         {
-          "type": "mrcp",
+          "type": "us_temporal",
           "date": "2026-10-14",
-          "result": "MRCP：肝内外胆管多节段狭窄伴扩张（报告原文抄录）",
+          "result": "颞动脉超声：左颞动脉管壁低回声晕环（halo 征）（报告原文抄录）",
           "detail": "确诊依据之一",
-          "sectionTitle": "MRCP（胆管成像）"
+          "sectionTitle": "颞动脉超声（晕轮征 halo sign）"
         },
         {
-          "type": "gallbladder",
-          "date": "2026-10-14",
-          "result": "超声：胆囊壁稍毛糙，未见结石",
-          "detail": "",
-          "sectionTitle": "胆囊超声"
-        },
-        {
-          "type": "colonoscopy",
+          "type": "biopsy",
           "date": null,
           "result": null,
           "detail": "医生已安排，待做",
-          "sectionTitle": "肠镜（IBD 共病监测）"
+          "sectionTitle": "颞动脉活检（医生安排时）"
         }
       ],
       "questions": [
         {
           "id": "q1",
-          "text": "ALP 多少算降下来了？我的目标值是什么？",
+          "text": "ESR 降到多少算控制住？我的目标值是什么？",
           "done": false
         },
         {
           "id": "q2",
-          "text": "肠镜什么时候做？要提前准备什么？",
+          "text": "激素要怎么减量？减量节奏谁说了算？",
           "done": false
         },
         {
           "id": "q3",
-          "text": "如果发烧寒战，我应该怎么处理？",
+          "text": "如果突然看东西模糊，我应该怎么处理？",
           "done": false
         }
       ],
       "documents": [
         {
           "id": "d1",
-          "name": "2026-10 MRCP 报告.pdf",
+          "name": "2026-10 颞动脉超声报告.pdf",
           "date": "2026-10-14",
           "parsed": false,
           "parseState": "unparsed"
         },
         {
           "id": "d2",
-          "name": "2026-11 肝功能.pdf",
+          "name": "2026-11 化验单.pdf",
           "date": "2026-11-08",
           "parsed": true,
           "parseState": "parsed"
@@ -134,18 +131,19 @@
       "trials": [
         {
           "id": "t1",
-          "title": "【虚构示例】GCA 瘙痒症状管理登记研究",
+          "title": "【虚构示例】GCA 症状负担登记研究",
           "source": "ctgov",
           "phase": "登记",
           "status": "登记状态，未核实",
-          "area": "上海"
+          "area": "上海",
+          "fictional": true
         }
       ],
       "pathway": [
         {
           "d": "2026-10-14",
           "phase": "确诊",
-          "text": "体检 ALP 升高，MRCP 见胆管多节段狭窄后确诊",
+          "text": "新发头痛伴头皮压痛，颞动脉超声见晕环征后确诊",
           "detail": {
             "regimen": {
               "summary": "尚未开始用药",
@@ -161,24 +159,24 @@
               ]
             },
             "metrics": {
-              "summary": "ALP 312 U/L（单据未印上限）",
+              "summary": "ESR 76 mm/h（Westergren，单据未印上限）",
               "items": [
                 [
-                  "ALP",
-                  "312 U/L"
+                  "ESR",
+                  "76 mm/h"
                 ],
                 [
-                  "GGT",
-                  "224 U/L"
+                  "CRP",
+                  "68 mg/L"
                 ]
               ]
             },
             "imaging": {
-              "summary": "MRCP：肝内外胆管多节段狭窄伴扩张",
+              "summary": "颞动脉超声：左颞动脉低回声晕环（halo 征）",
               "items": [
                 [
                   "报告原文",
-                  "肝内外胆管多发节段性狭窄，狭窄上游胆管扩张"
+                  "左颞动脉管壁低回声晕环，管腔未见闭塞"
                 ]
               ]
             },
@@ -204,23 +202,23 @@
         },
         {
           "d": "2026-10-21",
-          "phase": "开始 UDCA",
-          "text": "医生开了熊去氧胆酸，医嘱原文如记录",
+          "phase": "开始激素",
+          "text": "医生开了泼尼松，医嘱原文如记录",
           "detail": {
             "regimen": {
-              "summary": "熊去氧胆酸 250 mg × 4 片/日",
+              "summary": "泼尼松 45 mg 每日 1 次（晨服）",
               "items": [
                 [
                   "药名",
-                  "熊去氧胆酸片"
+                  "泼尼松片"
                 ],
                 [
                   "剂量原文",
-                  "250 mg × 4 片/日"
+                  "45 mg 每日 1 次（晨服）"
                 ],
                 [
                   "频次",
-                  "每日 2 次"
+                  "每日 1 次"
                 ],
                 [
                   "获批状态",
@@ -229,15 +227,15 @@
               ]
             },
             "metrics": {
-              "summary": "2026-11 复查 ALP 268 U/L",
+              "summary": "2026-11 复查 ESR 52 mm/h、CRP 31 mg/L",
               "items": [
                 [
-                  "2026-11 ALP",
-                  "268 U/L"
+                  "2026-11 ESR",
+                  "52 mm/h"
                 ],
                 [
-                  "2026-11 GGT",
-                  "196 U/L"
+                  "2026-11 CRP",
+                  "31 mg/L"
                 ]
               ]
             },
@@ -276,91 +274,75 @@
           "date": "2026-10-08",
           "items": [
             {
-              "code": "ALP",
-              "value": 318,
-              "unit": "U/L",
-              "refLow": 35,
+              "code": "ESR",
+              "value": 77,
+              "unit": "mm/h",
+              "method": "Westergren（魏氏法）",
+              "refLow": 0,
               "refHigh": null,
               "lab": "外院报告（未印上限）"
             },
             {
-              "code": "GGT",
-              "value": 221,
-              "unit": "U/L",
-              "refLow": 7,
-              "refHigh": 45,
-              "lab": "市一院检验科"
-            },
-            {
-              "code": "ALT",
-              "value": 64,
-              "unit": "U/L",
-              "refLow": 7,
-              "refHigh": 40,
-              "lab": "市一院检验科"
-            },
-            {
-              "code": "AST",
-              "value": 49,
-              "unit": "U/L",
-              "refLow": 13,
-              "refHigh": 35,
-              "lab": "市一院检验科"
-            },
-            {
-              "code": "TBil",
-              "value": 16,
-              "unit": "µmol/L",
+              "code": "CRP",
+              "value": 67,
+              "unit": "mg/L",
+              "method": null,
               "refLow": 0,
-              "refHigh": 21,
-              "lab": "市一院检验科"
-            },
-            {
-              "code": "ALB",
-              "value": 45.1,
-              "unit": "g/L",
-              "refLow": 40,
-              "refHigh": 55,
-              "lab": "市一院检验科"
-            },
-            {
-              "code": "PLT",
-              "value": 209,
-              "unit": "10⁹/L",
-              "refLow": 125,
-              "refHigh": 350,
+              "refHigh": 10,
               "lab": "市一院检验科"
             },
             {
               "code": "Hb",
-              "value": 139,
+              "value": 114,
               "unit": "g/L",
+              "method": null,
               "refLow": 115,
               "refHigh": 150,
               "lab": "市一院检验科"
             },
             {
-              "code": "WBC",
-              "value": 6,
+              "code": "PLT",
+              "value": 388,
               "unit": "10⁹/L",
-              "refLow": 3.5,
-              "refHigh": 9.5,
+              "method": null,
+              "refLow": 125,
+              "refHigh": 350,
               "lab": "市一院检验科"
             },
             {
-              "code": "ANC",
-              "value": 3,
-              "unit": "10⁹/L",
-              "refLow": 1.8,
-              "refHigh": 6.3,
+              "code": "ALT",
+              "value": 27,
+              "unit": "U/L",
+              "method": null,
+              "refLow": 7,
+              "refHigh": 40,
               "lab": "市一院检验科"
             },
             {
-              "code": "Cr",
-              "value": 68,
-              "unit": "µmol/L",
-              "refLow": 41,
-              "refHigh": 81,
+              "code": "FBG",
+              "value": 5.3,
+              "unit": "mmol/L",
+              "method": null,
+              "refLow": 3.9,
+              "refHigh": 6.1,
+              "lab": "市一院检验科"
+            },
+            {
+              "code": "SBP",
+              "value": 137,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
+              "lab": "市一院检验科"
+            },
+            {
+              "code": "DBP",
+              "value": 80,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
               "lab": "市一院检验科"
             }
           ]
@@ -369,91 +351,75 @@
           "date": "2026-11-08",
           "items": [
             {
-              "code": "ALP",
-              "value": 258,
-              "unit": "U/L",
-              "refLow": 35,
-              "refHigh": 120,
-              "lab": "市一院检验科"
-            },
-            {
-              "code": "GGT",
-              "value": 197,
-              "unit": "U/L",
-              "refLow": 7,
-              "refHigh": 45,
-              "lab": "市一院检验科"
-            },
-            {
-              "code": "ALT",
-              "value": 52,
-              "unit": "U/L",
-              "refLow": 7,
-              "refHigh": 40,
-              "lab": "市一院检验科"
-            },
-            {
-              "code": "AST",
-              "value": 40,
-              "unit": "U/L",
-              "refLow": 13,
-              "refHigh": 35,
-              "lab": "市一院检验科"
-            },
-            {
-              "code": "TBil",
-              "value": 13,
-              "unit": "µmol/L",
+              "code": "ESR",
+              "value": 54,
+              "unit": "mm/h",
+              "method": "Westergren（魏氏法）",
               "refLow": 0,
-              "refHigh": 21,
+              "refHigh": 30,
               "lab": "市一院检验科"
             },
             {
-              "code": "ALB",
-              "value": 44.3,
-              "unit": "g/L",
-              "refLow": 40,
-              "refHigh": 55,
-              "lab": "市一院检验科"
-            },
-            {
-              "code": "PLT",
-              "value": 204,
-              "unit": "10⁹/L",
-              "refLow": 125,
-              "refHigh": 350,
+              "code": "CRP",
+              "value": 31,
+              "unit": "mg/L",
+              "method": null,
+              "refLow": 0,
+              "refHigh": 10,
               "lab": "市一院检验科"
             },
             {
               "code": "Hb",
-              "value": 142,
+              "value": 124,
               "unit": "g/L",
+              "method": null,
               "refLow": 115,
               "refHigh": 150,
               "lab": "市一院检验科"
             },
             {
-              "code": "WBC",
-              "value": 6,
+              "code": "PLT",
+              "value": 319,
               "unit": "10⁹/L",
-              "refLow": 3.5,
-              "refHigh": 9.5,
+              "method": null,
+              "refLow": 125,
+              "refHigh": 350,
               "lab": "市一院检验科"
             },
             {
-              "code": "ANC",
-              "value": 3,
-              "unit": "10⁹/L",
-              "refLow": 1.8,
-              "refHigh": 6.3,
+              "code": "ALT",
+              "value": 26,
+              "unit": "U/L",
+              "method": null,
+              "refLow": 7,
+              "refHigh": 40,
               "lab": "市一院检验科"
             },
             {
-              "code": "Cr",
-              "value": 71,
-              "unit": "µmol/L",
-              "refLow": 41,
-              "refHigh": 81,
+              "code": "FBG",
+              "value": 5.6,
+              "unit": "mmol/L",
+              "method": null,
+              "refLow": 3.9,
+              "refHigh": 6.1,
+              "lab": "市一院检验科"
+            },
+            {
+              "code": "SBP",
+              "value": 131,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
+              "lab": "市一院检验科"
+            },
+            {
+              "code": "DBP",
+              "value": 75,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
               "lab": "市一院检验科"
             }
           ]
@@ -464,32 +430,31 @@
       "key": "B",
       "label": "档案 B · 长期随访",
       "name": "虚构患者乙",
-      "age": 55,
+      "age": 72,
       "sex": "女",
       "diagnosedAt": "2018-09-05",
       "startedAt": "2018-09-18",
-      "weightKg": 64,
+      "weightKg": 58,
       "antibodies": {
-        "panca": "positive",
-        "ana": "positive",
-        "note": "2018 年报告抄录"
+        "ana": "negative",
+        "note": "2018 年报告抄录；GCA 无特异性抗体，ANA 仅鉴别参考"
       },
-      "fibrosis": {
-        "method": "FibroScan（瞬时弹性成像）",
-        "value": "12.6 kPa",
+      "imaging": {
+        "method": "颞动脉超声（多普勒）",
+        "value": "右颞动脉管壁低回声晕环（halo 征），较前对照变薄（报告原文抄录）",
         "date": "2026-03-11",
         "note": "报告原文抄录，未判读"
       },
-      "ibd": {
-        "type": "ulcerative-colitis",
-        "note": "溃疡性结肠炎，消化科随访中",
-        "colonoscopyLast": "2025-06-18"
+      "pmr": {
+        "status": "diagnosed",
+        "note": "风湿性多肌痛（PMR），风湿科已安排随访",
+        "lastVisit": "2026-04-30"
       },
       "comorbidity": [
         {
-          "name": "溃疡性结肠炎",
-          "since": "2019",
-          "note": "消化科，美沙拉嗪维持",
+          "name": "风湿性多肌痛（PMR）",
+          "since": "2020",
+          "note": "风湿科，医生已安排随访",
           "dept": null,
           "visibility": "shared"
         },
@@ -503,18 +468,58 @@
       ],
       "meds": [
         {
-          "name": "熊去氧胆酸胶囊",
-          "doseText": "250 mg × 6 粒/日",
-          "freq": "每日 3 次",
+          "name": "泼尼松片",
+          "doseText": "55 mg 每日 1 次（晨服，起始 40–60 mg/d【待核】，医嘱原文抄录）",
+          "freq": "每日 1 次",
           "startDate": "2018-09-18",
+          "approval": "unverified",
+          "inUse": false
+        },
+        {
+          "name": "泼尼松片",
+          "doseText": "40 mg 每日 1 次（减量阶梯，医嘱原文抄录）",
+          "freq": "每日 1 次",
+          "startDate": "2018-12-10",
+          "approval": "unverified",
+          "inUse": false
+        },
+        {
+          "name": "泼尼松片",
+          "doseText": "20 mg 每日 1 次（减量阶梯，医嘱原文抄录）",
+          "freq": "每日 1 次",
+          "startDate": "2019-06-20",
+          "approval": "unverified",
+          "inUse": false
+        },
+        {
+          "name": "泼尼松片",
+          "doseText": "7.5 mg 每日 1 次（减量阶梯，医嘱原文抄录）",
+          "freq": "每日 1 次",
+          "startDate": "2020-03-15",
+          "approval": "unverified",
+          "inUse": false
+        },
+        {
+          "name": "泼尼松片",
+          "doseText": "5 mg 每日 1 次（维持剂量，医嘱原文抄录）",
+          "freq": "每日 1 次",
+          "startDate": "2020-09-01",
           "approval": "unverified",
           "inUse": true
         },
         {
-          "name": "美沙拉嗪缓释片",
-          "doseText": "1 g 每日 2 次（消化科医嘱）",
-          "freq": "每日 2 次",
-          "startDate": "2019-04-02",
+          "name": "托珠单抗注射液",
+          "doseText": "162 mg 皮下注射 每周 1 次【待核：间隔以医生医嘱为准】",
+          "freq": "每周 1 次",
+          "startDate": "2025-02-20",
+          "approval": "unverified",
+          "inUse": true
+        },
+        {
+          "name": "阿司匹林肠溶片",
+          "doseText": "100 mg 每日 1 次（小剂量，医生安排）",
+          "freq": "每日 1 次",
+          "startDate": "2025-02-25",
           "approval": "unverified",
           "inUse": true
         },
@@ -556,37 +561,49 @@
       "episodes": [
         {
           "id": "e1",
-          "start": "2023-02-10",
-          "end": "2023-02-24",
+          "start": "2021-04-12",
+          "end": "2021-05-02",
           "hospital": "市一院",
-          "signs": "发热 38.6℃、寒战、尿色加深",
-          "labsNote": "胆红素升高（当时化验原件未存）",
-          "treatment": "住院抗感染治疗 10 天（医生处置原文大意）",
+          "signs": "新发双侧颞部头痛、头皮压痛明显",
+          "labsNote": "ESR 88 mm/h、CRP 56 mg/L（当时化验原件未存，口头转述）",
+          "treatment": "住院甲泼尼龙静脉治疗后改口服（医生处置原文大意）",
           "actionPlan": null,
-          "note": "第一次发作，当时不知道这就是胆管炎",
+          "note": "第一次发作，当时不知道这就是 GCA 活动",
           "visibility": "shared"
         },
         {
           "id": "e2",
-          "start": "2025-01-18",
-          "end": "2025-01-27",
+          "start": "2023-02-10",
+          "end": "2023-02-24",
           "hospital": "区中心医院",
-          "signs": "发热、右上腹痛",
-          "labsNote": "白细胞与胆红素升高",
-          "treatment": "住院抗感染；出院后医生安排 ERCP 球囊扩张（2025-02-20）",
-          "actionPlan": "医生给的计划原文：若再次出现发热寒战或尿色明显加深，当天联系肝胆科值班电话，不要等到复诊",
+          "signs": "头痛复发伴下颌跛行（嚼东西咬不动）",
+          "labsNote": "ESR 76 mm/h",
+          "treatment": "激素加量口服；医生调整减量节奏（原文大意）",
+          "actionPlan": "医生给的计划原文：若再次出现头痛明显加重或看东西模糊，当天联系风湿科值班电话，不要等到复诊",
           "note": "这次记住了先打电话",
           "visibility": "shared"
         },
         {
           "id": "e3",
+          "start": "2025-01-18",
+          "end": "2025-01-27",
+          "hospital": "市一院",
+          "signs": "右眼一过性视物模糊，半小时自行缓解（按医生要求当日就诊）",
+          "labsNote": "CRP 47 mg/L",
+          "treatment": "医生安排加用托珠单抗（2025-02-20 起，医嘱原文见用药）",
+          "actionPlan": "同上次医生计划（2023-02 记录）；另嘱：视力症状再发当日就诊",
+          "note": "视力症状这次及时去了医院",
+          "visibility": "shared"
+        },
+        {
+          "id": "e4",
           "start": "2026-04-30",
           "end": "2026-05-12",
           "hospital": "市一院",
-          "signs": "低热、乏力加重",
-          "labsNote": "胆红素 38 µmol/L",
-          "treatment": "门诊抗感染后好转；医生调了复查节奏",
-          "actionPlan": "同上次医生计划（2025-01 记录）",
+          "signs": "肩髋晨僵加重（PMR 症状）伴低热",
+          "labsNote": "ESR 34 mm/h、CRP 21 mg/L",
+          "treatment": "门诊调整激素后好转；医生调了复查节奏",
+          "actionPlan": "同上次医生计划（2023-02 记录）",
           "note": "",
           "visibility": "shared"
         }
@@ -594,143 +611,136 @@
       "symptoms": [
         {
           "date": "2026-10-05",
-          "itch": 3,
-          "nightWorse": false,
-          "scratch": false,
-          "sleepBreaks": 0,
-          "fatigue": 3,
-          "note": "下午就没劲了",
+          "headache": 2,
+          "stiffness": 2,
+          "scalp": false,
+          "jaw": false,
+          "vision": false,
+          "note": "晨僵半小时，活动后好",
           "visibility": "shared"
         },
         {
           "date": "2026-09-18",
-          "itch": 2,
-          "nightWorse": false,
-          "scratch": false,
-          "sleepBreaks": 0,
-          "fatigue": 3,
+          "headache": 3,
+          "stiffness": 2,
+          "scalp": true,
+          "jaw": false,
+          "vision": false,
           "note": "",
           "visibility": "shared"
         },
         {
           "date": "2026-08-22",
-          "itch": 4,
-          "nightWorse": true,
-          "scratch": false,
-          "sleepBreaks": 1,
-          "fatigue": 2,
-          "note": "",
+          "headache": 5,
+          "stiffness": 3,
+          "scalp": true,
+          "jaw": true,
+          "vision": false,
+          "note": "颞部跳痛，嚼东西发酸",
           "visibility": "shared"
         },
         {
           "date": "2026-07-11",
-          "itch": 2,
-          "nightWorse": false,
-          "scratch": false,
-          "sleepBreaks": 0,
-          "fatigue": 2,
-          "note": "",
+          "headache": 2,
+          "stiffness": 1,
+          "scalp": false,
+          "jaw": false,
+          "vision": true,
+          "note": "一过性视物模糊，当天按医生要求就诊",
           "visibility": "shared"
         },
         {
           "date": "2026-06-09",
-          "itch": 5,
-          "nightWorse": true,
-          "scratch": true,
-          "sleepBreaks": 2,
-          "fatigue": 3,
-          "note": "天热更痒",
+          "headache": 4,
+          "stiffness": 3,
+          "scalp": false,
+          "jaw": false,
+          "vision": true,
+          "note": "午后视物模糊数分钟，医生让记录下来",
           "visibility": "shared"
         },
         {
           "date": "2026-05-16",
-          "itch": 3,
-          "nightWorse": false,
-          "scratch": false,
-          "sleepBreaks": 0,
-          "fatigue": 2,
+          "headache": 1,
+          "stiffness": 2,
+          "scalp": false,
+          "jaw": false,
+          "vision": false,
           "note": "",
           "visibility": "shared"
         }
       ],
       "screening": [
         {
-          "type": "colonoscopy",
-          "date": "2025-06-18",
-          "result": "肠镜：横结肠可见一段轻度炎性改变（报告原文）",
-          "detail": "消化科：病理未见异型，按医嘱 1–2 年复查【待核：具体间隔以医生安排为准】",
-          "sectionTitle": "肠镜（IBD 共病监测）"
-        },
-        {
-          "type": "mrcp",
-          "date": "2025-02-20",
-          "result": "MRCP：肝外胆管狭窄段较前对照，上游扩张（报告原文）",
-          "detail": "ERCP 扩张前评估",
-          "sectionTitle": "MRCP（胆管成像）"
-        },
-        {
-          "type": "fibroscan",
+          "type": "us_temporal",
           "date": "2026-03-11",
-          "result": "FibroScan 12.6 kPa（报告原文）",
-          "detail": "未判读",
-          "sectionTitle": "肝脏弹性（FibroScan）"
+          "result": "颞动脉超声：右颞动脉晕环较前对照变薄（报告原文）",
+          "detail": "按医生节奏复查，未判读",
+          "sectionTitle": "颞动脉超声（晕轮征 halo sign）"
         },
         {
-          "type": "gallbladder",
-          "date": "2025-11-07",
-          "result": "超声：胆囊息肉 3 mm，未见结石（报告原文）",
+          "type": "cta",
+          "date": "2025-06-18",
+          "result": "CTA：升主动脉及主动脉弓管壁增厚较前相仿（报告原文）",
+          "detail": "大血管评估，医生安排时做",
+          "sectionTitle": "CTA / MRA（大血管成像）"
+        },
+        {
+          "type": "petct",
+          "date": null,
+          "result": null,
+          "detail": "医生已安排，待做",
+          "sectionTitle": "PET-CT（医生安排时）"
+        },
+        {
+          "type": "pmr_followup",
+          "date": "2026-04-30",
+          "result": "风湿科 PMR 随访：晨僵情况记录（就诊记录抄录）",
           "detail": "医生说按他的节奏复查",
-          "sectionTitle": "胆囊超声"
-        },
-        {
-          "type": "endoscopy",
-          "date": "2024-11-20",
-          "result": "胃镜：食管下段轻度静脉曲张（报告原文）",
-          "detail": "医生建议定期复查",
-          "sectionTitle": "胃镜（静脉曲张，医生安排时）"
+          "sectionTitle": "PMR 随访（医生已安排）"
         }
       ],
       "questions": [
         {
           "id": "q1",
-          "text": "下次肠镜该什么时候做？间隔是按年算吗？",
+          "text": "激素还要吃多久？减量节奏怎么定？",
           "done": false
         },
         {
           "id": "q2",
-          "text": "胆囊息肉 3 mm 要紧吗？",
+          "text": "打完托珠单抗有点发热要紧吗？",
           "done": false
         },
         {
           "id": "q3",
-          "text": "甲减的药和肝的药一起吃要注意什么？",
+          "text": "阿司匹林和我的其他药要错开吃吗？",
           "done": false
         },
         {
           "id": "q4",
-          "text": "ERCP 之后这次 MRCP 结果说明什么？",
+          "text": "这次颞动脉超声结果和上次比怎么样？",
           "done": true
         }
       ],
       "documents": [
         {
           "id": "d1",
-          "name": "2026-03 FibroScan.pdf",
+          "name": "2026-03 颞动脉超声.pdf",
           "date": "2026-03-11",
           "parsed": true,
           "parseState": "parsed"
         },
         {
           "id": "d2",
-          "name": "2025-06 肠镜.pdf",
+          "name": "2025-06 CTA.pdf",
           "date": "2025-06-18",
           "parsed": true,
           "parseState": "parsed"
         },
         {
           "id": "d3",
-          "name": "2025-02 MRCP.pdf",
-          "date": "2025-02-20",
+          "name": "2025-01 出院小结.pdf",
+          "date": "2025-01-27",
           "parsed": false,
           "parseState": "unparsed"
         }
@@ -742,33 +752,35 @@
           "source": "ictrp",
           "phase": "观察性",
           "status": "登记状态，未核实",
-          "area": "广州"
+          "area": "广州",
+          "fictional": true
         },
         {
           "id": "t2",
-          "title": "【虚构示例】GCA 胆管炎发作频率研究",
+          "title": "【虚构示例】GCA 复发频率与托珠单抗研究",
           "source": "ctgov",
           "phase": "登记",
           "status": "登记状态，未核实",
-          "area": "北京"
+          "area": "北京",
+          "fictional": true
         }
       ],
       "pathway": [
         {
           "d": "2018-09-18",
-          "phase": "确诊并开始 UDCA",
-          "text": "MRCP 提示胆管多节段狭窄，确诊后开始单药",
+          "phase": "确诊并开始激素",
+          "text": "颞部头痛伴头皮压痛，超声与活检后确诊，开始泼尼松",
           "detail": {
             "regimen": {
-              "summary": "熊去氧胆酸 250 mg × 6 粒/日",
+              "summary": "泼尼松 55 mg 每日 1 次（晨服）",
               "items": [
                 [
                   "药名",
-                  "熊去氧胆酸胶囊"
+                  "泼尼松片"
                 ],
                 [
                   "剂量原文",
-                  "250 mg × 6 粒/日"
+                  "55 mg 每日 1 次（晨服）"
                 ],
                 [
                   "获批状态",
@@ -777,24 +789,24 @@
               ]
             },
             "metrics": {
-              "summary": "确诊时 ALP 310 U/L",
+              "summary": "确诊时 ESR 92 mm/h、CRP 61 mg/L",
               "items": [
                 [
-                  "2018-09 ALP",
-                  "310 U/L"
+                  "2018-09 ESR",
+                  "92 mm/h"
                 ],
                 [
-                  "2018-09 TBil",
-                  "21 µmol/L"
+                  "2018-09 CRP",
+                  "61 mg/L"
                 ]
               ]
             },
             "imaging": {
-              "summary": "MRCP：肝内外胆管多节段狭窄",
+              "summary": "颞动脉超声：右颞动脉低回声晕环（halo 征）",
               "items": [
                 [
                   "报告原文",
-                  "肝内外胆管多发节段性狭窄伴上游扩张"
+                  "右颞动脉管壁低回声晕环"
                 ]
               ]
             },
@@ -821,19 +833,19 @@
         {
           "d": "2023-02-10",
           "phase": "第一次发作",
-          "text": "发热寒战住院，才知道这叫胆管炎",
+          "text": "头痛复发伴下颌跛行，激素加量后缓解",
           "detail": {
             "regimen": {
-              "summary": "维持原用药",
+              "summary": "激素加量（医嘱原文见调药记录）",
               "items": [
                 [
                   "方案",
-                  "未变更"
+                  "泼尼松加量，医生原文照录"
                 ]
               ]
             },
             "metrics": {
-              "summary": "胆红素升高（原件未存）",
+              "summary": "ESR 76 mm/h、CRP 39 mg/L",
               "items": [
                 [
                   "说明",
@@ -842,7 +854,7 @@
               ]
             },
             "imaging": {
-              "summary": "住院期间超声",
+              "summary": "住院期间颞动脉超声",
               "items": [
                 [
                   "说明",
@@ -860,62 +872,6 @@
               ]
             },
             "support": {
-              "summary": "\"根本不知道这两个病是一伙的\"",
-              "items": [
-                [
-                  "患者原话",
-                  "根本不知道胆管炎和肠子的病是一伙的"
-                ]
-              ]
-            }
-          }
-        },
-        {
-          "d": "2025-02-20",
-          "phase": "ERCP 球囊扩张",
-          "text": "发作后医生安排 ERCP 球囊扩张狭窄段",
-          "detail": {
-            "regimen": {
-              "summary": "维持原用药",
-              "items": [
-                [
-                  "方案",
-                  "未变更"
-                ]
-              ]
-            },
-            "metrics": {
-              "summary": "术前胆红素 42 µmol/L，术后 1 个月 24 µmol/L",
-              "items": [
-                [
-                  "术前 TBil",
-                  "42 µmol/L"
-                ],
-                [
-                  "术后 TBil",
-                  "24 µmol/L"
-                ]
-              ]
-            },
-            "imaging": {
-              "summary": "ERCP 术中造影 + 术后 MRCP",
-              "items": [
-                [
-                  "报告原文",
-                  "肝外胆管狭窄段扩张后通畅，上游扩张减轻"
-                ]
-              ]
-            },
-            "ae": {
-              "summary": "术后轻度腹胀",
-              "items": [
-                [
-                  "记录",
-                  "术后两天腹胀，自行缓解"
-                ]
-              ]
-            },
-            "support": {
               "summary": "\"医生给了发作时的电话\"",
               "items": [
                 [
@@ -927,9 +883,73 @@
           }
         },
         {
+          "d": "2025-02-20",
+          "phase": "加用托珠单抗",
+          "text": "视力症状发作后，医生安排加用托珠单抗",
+          "detail": {
+            "regimen": {
+              "summary": "托珠单抗 162 mg 皮下注射 每周 1 次【待核】",
+              "items": [
+                [
+                  "药名",
+                  "托珠单抗注射液"
+                ],
+                [
+                  "剂量原文",
+                  "162 mg 皮下注射 每周 1 次"
+                ],
+                [
+                  "获批状态",
+                  "未核实"
+                ]
+              ]
+            },
+            "metrics": {
+              "summary": "发作时 CRP 47 mg/L，加用后 1 个月 12 mg/L",
+              "items": [
+                [
+                  "发作时 CRP",
+                  "47 mg/L"
+                ],
+                [
+                  "1 个月后 CRP",
+                  "12 mg/L"
+                ]
+              ]
+            },
+            "imaging": {
+              "summary": "CTA：主动脉管壁增厚较前相仿",
+              "items": [
+                [
+                  "报告原文",
+                  "升主动脉及主动脉弓管壁增厚较前相仿"
+                ]
+              ]
+            },
+            "ae": {
+              "summary": "注射当晚低热",
+              "items": [
+                [
+                  "记录",
+                  "注射当晚低热，次日自行缓解"
+                ]
+              ]
+            },
+            "support": {
+              "summary": "\"记下来就不慌\"",
+              "items": [
+                [
+                  "患者原话",
+                  "把每次的数记下来，去医院就不慌了"
+                ]
+              ]
+            }
+          }
+        },
+        {
           "d": "2026-03-11",
-          "phase": "弹性成像复查",
-          "text": "按医生节奏做 FibroScan 与化验",
+          "phase": "影像复查与化验评估",
+          "text": "按医生节奏复查颞动脉超声与化验",
           "detail": {
             "regimen": {
               "summary": "维持原用药",
@@ -941,24 +961,24 @@
               ]
             },
             "metrics": {
-              "summary": "ALP 179 U/L，胆红素 18 µmol/L",
+              "summary": "ESR 24 mm/h、CRP 8 mg/L",
               "items": [
                 [
-                  "2026-03 ALP",
-                  "179 U/L"
+                  "2026-03 ESR",
+                  "24 mm/h"
                 ],
                 [
-                  "2026-03 TBil",
-                  "18 µmol/L"
+                  "2026-03 CRP",
+                  "8 mg/L"
                 ]
               ]
             },
             "imaging": {
-              "summary": "FibroScan 12.6 kPa",
+              "summary": "颞动脉超声：晕环较前对照变薄",
               "items": [
                 [
                   "报告原文",
-                  "12.6 kPa（未判读）"
+                  "右颞动脉晕环较前对照变薄（未判读）"
                 ]
               ]
             },
@@ -988,91 +1008,75 @@
           "date": "2026-05-08",
           "items": [
             {
-              "code": "ALP",
-              "value": 316,
-              "unit": "U/L",
-              "refLow": 40,
+              "code": "ESR",
+              "value": 39,
+              "unit": "mm/h",
+              "method": "Westergren（魏氏法）",
+              "refLow": 0,
               "refHigh": null,
               "lab": "外院报告（未印上限）"
             },
             {
-              "code": "GGT",
-              "value": 219,
-              "unit": "U/L",
-              "refLow": 8,
-              "refHigh": 50,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "ALT",
-              "value": 53,
-              "unit": "U/L",
-              "refLow": 8,
-              "refHigh": 45,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "AST",
-              "value": 49,
-              "unit": "U/L",
-              "refLow": 14,
-              "refHigh": 40,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "TBil",
-              "value": 22,
-              "unit": "µmol/L",
+              "code": "CRP",
+              "value": 14,
+              "unit": "mg/L",
+              "method": null,
               "refLow": 0,
-              "refHigh": 23,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "ALB",
-              "value": 40.2,
-              "unit": "g/L",
-              "refLow": 39,
-              "refHigh": 54,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "PLT",
-              "value": 122,
-              "unit": "10⁹/L",
-              "refLow": 120,
-              "refHigh": 340,
+              "refHigh": 8,
               "lab": "区中心医院"
             },
             {
               "code": "Hb",
-              "value": 116,
+              "value": 127,
               "unit": "g/L",
+              "method": null,
               "refLow": 112,
               "refHigh": 148,
               "lab": "区中心医院"
             },
             {
-              "code": "WBC",
-              "value": 4,
+              "code": "PLT",
+              "value": 264,
               "unit": "10⁹/L",
-              "refLow": 3.4,
-              "refHigh": 9.2,
+              "method": null,
+              "refLow": 120,
+              "refHigh": 340,
               "lab": "区中心医院"
             },
             {
-              "code": "ANC",
-              "value": 2,
-              "unit": "10⁹/L",
-              "refLow": 1.7,
-              "refHigh": 6,
+              "code": "ALT",
+              "value": 31,
+              "unit": "U/L",
+              "method": null,
+              "refLow": 8,
+              "refHigh": 45,
               "lab": "区中心医院"
             },
             {
-              "code": "Cr",
-              "value": 72,
-              "unit": "µmol/L",
-              "refLow": 40,
-              "refHigh": 84,
+              "code": "FBG",
+              "value": 6.1,
+              "unit": "mmol/L",
+              "method": null,
+              "refLow": 3.9,
+              "refHigh": 6.1,
+              "lab": "区中心医院"
+            },
+            {
+              "code": "SBP",
+              "value": 140,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
+              "lab": "区中心医院"
+            },
+            {
+              "code": "DBP",
+              "value": 78,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
               "lab": "区中心医院"
             }
           ]
@@ -1081,91 +1085,75 @@
           "date": "2026-06-08",
           "items": [
             {
-              "code": "ALP",
-              "value": 249,
-              "unit": "U/L",
-              "refLow": 40,
-              "refHigh": 135,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "GGT",
-              "value": 187,
-              "unit": "U/L",
-              "refLow": 8,
-              "refHigh": 50,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "ALT",
-              "value": 46,
-              "unit": "U/L",
-              "refLow": 8,
-              "refHigh": 45,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "AST",
-              "value": 43,
-              "unit": "U/L",
-              "refLow": 14,
-              "refHigh": 40,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "TBil",
-              "value": 19,
-              "unit": "µmol/L",
+              "code": "ESR",
+              "value": 33,
+              "unit": "mm/h",
+              "method": "Westergren（魏氏法）",
               "refLow": 0,
-              "refHigh": 23,
+              "refHigh": 20,
               "lab": "区中心医院"
             },
             {
-              "code": "ALB",
-              "value": 40.8,
-              "unit": "g/L",
-              "refLow": 39,
-              "refHigh": 54,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "PLT",
-              "value": 109,
-              "unit": "10⁹/L",
-              "refLow": 120,
-              "refHigh": 340,
+              "code": "CRP",
+              "value": 11,
+              "unit": "mg/L",
+              "method": null,
+              "refLow": 0,
+              "refHigh": 8,
               "lab": "区中心医院"
             },
             {
               "code": "Hb",
-              "value": 121,
+              "value": 130,
               "unit": "g/L",
+              "method": null,
               "refLow": 112,
               "refHigh": 148,
               "lab": "区中心医院"
             },
             {
-              "code": "WBC",
-              "value": 4,
+              "code": "PLT",
+              "value": 252,
               "unit": "10⁹/L",
-              "refLow": 3.4,
-              "refHigh": 9.2,
+              "method": null,
+              "refLow": 120,
+              "refHigh": 340,
               "lab": "区中心医院"
             },
             {
-              "code": "ANC",
-              "value": 2,
-              "unit": "10⁹/L",
-              "refLow": 1.7,
-              "refHigh": 6,
+              "code": "ALT",
+              "value": 34,
+              "unit": "U/L",
+              "method": null,
+              "refLow": 8,
+              "refHigh": 45,
               "lab": "区中心医院"
             },
             {
-              "code": "Cr",
-              "value": 71,
-              "unit": "µmol/L",
-              "refLow": 40,
-              "refHigh": 84,
+              "code": "FBG",
+              "value": 5.8,
+              "unit": "mmol/L",
+              "method": null,
+              "refLow": 3.9,
+              "refHigh": 6.1,
+              "lab": "区中心医院"
+            },
+            {
+              "code": "SBP",
+              "value": 133,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
+              "lab": "区中心医院"
+            },
+            {
+              "code": "DBP",
+              "value": 78,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
               "lab": "区中心医院"
             }
           ]
@@ -1174,91 +1162,75 @@
           "date": "2026-07-08",
           "items": [
             {
-              "code": "ALP",
-              "value": 201,
-              "unit": "U/L",
-              "refLow": 40,
-              "refHigh": 135,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "GGT",
-              "value": 165,
-              "unit": "U/L",
-              "refLow": 8,
-              "refHigh": 50,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "ALT",
-              "value": 40,
-              "unit": "U/L",
-              "refLow": 8,
-              "refHigh": 45,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "AST",
-              "value": 39,
-              "unit": "U/L",
-              "refLow": 14,
-              "refHigh": 40,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "TBil",
-              "value": 18,
-              "unit": "µmol/L",
+              "code": "ESR",
+              "value": 30,
+              "unit": "mm/h",
+              "method": "Westergren（魏氏法）",
               "refLow": 0,
-              "refHigh": 23,
+              "refHigh": 20,
               "lab": "区中心医院"
             },
             {
-              "code": "ALB",
-              "value": 39.1,
-              "unit": "g/L",
-              "refLow": 39,
-              "refHigh": 54,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "PLT",
-              "value": 99,
-              "unit": "10⁹/L",
-              "refLow": 120,
-              "refHigh": 340,
+              "code": "CRP",
+              "value": 9,
+              "unit": "mg/L",
+              "method": null,
+              "refLow": 0,
+              "refHigh": 8,
               "lab": "区中心医院"
             },
             {
               "code": "Hb",
-              "value": 113,
+              "value": 131,
               "unit": "g/L",
+              "method": null,
               "refLow": 112,
               "refHigh": 148,
               "lab": "区中心医院"
             },
             {
-              "code": "WBC",
-              "value": 4,
+              "code": "PLT",
+              "value": 246,
               "unit": "10⁹/L",
-              "refLow": 3.4,
-              "refHigh": 9.2,
+              "method": null,
+              "refLow": 120,
+              "refHigh": 340,
               "lab": "区中心医院"
             },
             {
-              "code": "ANC",
-              "value": 2,
-              "unit": "10⁹/L",
-              "refLow": 1.7,
-              "refHigh": 6,
+              "code": "ALT",
+              "value": 43,
+              "unit": "U/L",
+              "method": null,
+              "refLow": 8,
+              "refHigh": 45,
               "lab": "区中心医院"
             },
             {
-              "code": "Cr",
-              "value": 68,
-              "unit": "µmol/L",
-              "refLow": 40,
-              "refHigh": 84,
+              "code": "FBG",
+              "value": 6.3,
+              "unit": "mmol/L",
+              "method": null,
+              "refLow": 3.9,
+              "refHigh": 6.1,
+              "lab": "区中心医院"
+            },
+            {
+              "code": "SBP",
+              "value": 132,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
+              "lab": "区中心医院"
+            },
+            {
+              "code": "DBP",
+              "value": 79,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
               "lab": "区中心医院"
             }
           ]
@@ -1267,91 +1239,75 @@
           "date": "2026-08-08",
           "items": [
             {
-              "code": "ALP",
-              "value": 193,
-              "unit": "U/L",
-              "refLow": 40,
-              "refHigh": 135,
+              "code": "ESR",
+              "value": 26,
+              "unit": "mm/h",
+              "method": "Westergren（魏氏法）",
+              "refLow": 0,
+              "refHigh": 20,
               "lab": "区中心医院"
             },
             {
-              "code": "GGT",
-              "value": 148,
-              "unit": "U/L",
-              "refLow": 8,
-              "refHigh": 50,
+              "code": "CRP",
+              "value": 8,
+              "unit": "mg/L",
+              "method": null,
+              "refLow": 0,
+              "refHigh": 8,
+              "lab": "区中心医院"
+            },
+            {
+              "code": "Hb",
+              "value": 128,
+              "unit": "g/L",
+              "method": null,
+              "refLow": 112,
+              "refHigh": 148,
+              "lab": "区中心医院"
+            },
+            {
+              "code": "PLT",
+              "value": 246,
+              "unit": "10⁹/L",
+              "method": null,
+              "refLow": 120,
+              "refHigh": 340,
               "lab": "区中心医院"
             },
             {
               "code": "ALT",
               "value": 37,
               "unit": "U/L",
+              "method": null,
               "refLow": 8,
               "refHigh": 45,
               "lab": "区中心医院"
             },
             {
-              "code": "AST",
-              "value": 35,
-              "unit": "U/L",
-              "refLow": 14,
-              "refHigh": 40,
+              "code": "FBG",
+              "value": 5.9,
+              "unit": "mmol/L",
+              "method": null,
+              "refLow": 3.9,
+              "refHigh": 6.1,
               "lab": "区中心医院"
             },
             {
-              "code": "TBil",
-              "value": 17,
-              "unit": "µmol/L",
-              "refLow": 0,
-              "refHigh": 23,
+              "code": "SBP",
+              "value": 129,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
               "lab": "区中心医院"
             },
             {
-              "code": "ALB",
-              "value": 38.8,
-              "unit": "g/L",
-              "refLow": 39,
-              "refHigh": 54,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "PLT",
-              "value": 96,
-              "unit": "10⁹/L",
-              "refLow": 120,
-              "refHigh": 340,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "Hb",
-              "value": 118,
-              "unit": "g/L",
-              "refLow": 112,
-              "refHigh": 148,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "WBC",
-              "value": 4,
-              "unit": "10⁹/L",
-              "refLow": 3.4,
-              "refHigh": 9.2,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "ANC",
-              "value": 2,
-              "unit": "10⁹/L",
-              "refLow": 1.7,
-              "refHigh": 6,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "Cr",
-              "value": 73,
-              "unit": "µmol/L",
-              "refLow": 40,
-              "refHigh": 84,
+              "code": "DBP",
+              "value": 80,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
               "lab": "区中心医院"
             }
           ]
@@ -1360,91 +1316,75 @@
           "date": "2026-09-08",
           "items": [
             {
-              "code": "ALP",
-              "value": 177,
-              "unit": "U/L",
-              "refLow": 40,
-              "refHigh": 135,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "GGT",
-              "value": 139,
-              "unit": "U/L",
-              "refLow": 8,
-              "refHigh": 50,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "ALT",
-              "value": 36,
-              "unit": "U/L",
-              "refLow": 8,
-              "refHigh": 45,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "AST",
-              "value": 35,
-              "unit": "U/L",
-              "refLow": 14,
-              "refHigh": 40,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "TBil",
-              "value": 18,
-              "unit": "µmol/L",
+              "code": "ESR",
+              "value": 24,
+              "unit": "mm/h",
+              "method": "Westergren（魏氏法）",
               "refLow": 0,
-              "refHigh": 23,
+              "refHigh": 20,
               "lab": "区中心医院"
             },
             {
-              "code": "ALB",
-              "value": 37.5,
-              "unit": "g/L",
-              "refLow": 39,
-              "refHigh": 54,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "PLT",
-              "value": 97,
-              "unit": "10⁹/L",
-              "refLow": 120,
-              "refHigh": 340,
+              "code": "CRP",
+              "value": 7,
+              "unit": "mg/L",
+              "method": null,
+              "refLow": 0,
+              "refHigh": 8,
               "lab": "区中心医院"
             },
             {
               "code": "Hb",
-              "value": 110,
+              "value": 123,
               "unit": "g/L",
+              "method": null,
               "refLow": 112,
               "refHigh": 148,
               "lab": "区中心医院"
             },
             {
-              "code": "WBC",
-              "value": 4,
+              "code": "PLT",
+              "value": 245,
               "unit": "10⁹/L",
-              "refLow": 3.4,
-              "refHigh": 9.2,
+              "method": null,
+              "refLow": 120,
+              "refHigh": 340,
               "lab": "区中心医院"
             },
             {
-              "code": "ANC",
-              "value": 2,
-              "unit": "10⁹/L",
-              "refLow": 1.7,
-              "refHigh": 6,
+              "code": "ALT",
+              "value": 34,
+              "unit": "U/L",
+              "method": null,
+              "refLow": 8,
+              "refHigh": 45,
               "lab": "区中心医院"
             },
             {
-              "code": "Cr",
-              "value": 68,
-              "unit": "µmol/L",
-              "refLow": 40,
-              "refHigh": 84,
+              "code": "FBG",
+              "value": 5.9,
+              "unit": "mmol/L",
+              "method": null,
+              "refLow": 3.9,
+              "refHigh": 6.1,
+              "lab": "区中心医院"
+            },
+            {
+              "code": "SBP",
+              "value": 127,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
+              "lab": "区中心医院"
+            },
+            {
+              "code": "DBP",
+              "value": 79,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
               "lab": "区中心医院"
             }
           ]
@@ -1453,91 +1393,75 @@
           "date": "2026-10-08",
           "items": [
             {
-              "code": "ALP",
-              "value": 180,
-              "unit": "U/L",
-              "refLow": 40,
-              "refHigh": 135,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "GGT",
-              "value": 149,
-              "unit": "U/L",
-              "refLow": 8,
-              "refHigh": 50,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "ALT",
-              "value": 39,
-              "unit": "U/L",
-              "refLow": 8,
-              "refHigh": 45,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "AST",
-              "value": 37,
-              "unit": "U/L",
-              "refLow": 14,
-              "refHigh": 40,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "TBil",
-              "value": 18,
-              "unit": "µmol/L",
+              "code": "ESR",
+              "value": 25,
+              "unit": "mm/h",
+              "method": "Westergren（魏氏法）",
               "refLow": 0,
-              "refHigh": 23,
+              "refHigh": 20,
               "lab": "区中心医院"
             },
             {
-              "code": "ALB",
-              "value": 37.6,
-              "unit": "g/L",
-              "refLow": 39,
-              "refHigh": 54,
-              "lab": "区中心医院"
-            },
-            {
-              "code": "PLT",
-              "value": 92,
-              "unit": "10⁹/L",
-              "refLow": 120,
-              "refHigh": 340,
+              "code": "CRP",
+              "value": 8,
+              "unit": "mg/L",
+              "method": null,
+              "refLow": 0,
+              "refHigh": 8,
               "lab": "区中心医院"
             },
             {
               "code": "Hb",
-              "value": 112,
+              "value": 128,
               "unit": "g/L",
+              "method": null,
               "refLow": 112,
               "refHigh": 148,
               "lab": "区中心医院"
             },
             {
-              "code": "WBC",
-              "value": 4,
+              "code": "PLT",
+              "value": 251,
               "unit": "10⁹/L",
-              "refLow": 3.4,
-              "refHigh": 9.2,
+              "method": null,
+              "refLow": 120,
+              "refHigh": 340,
               "lab": "区中心医院"
             },
             {
-              "code": "ANC",
-              "value": 2,
-              "unit": "10⁹/L",
-              "refLow": 1.7,
-              "refHigh": 6,
+              "code": "ALT",
+              "value": 36,
+              "unit": "U/L",
+              "method": null,
+              "refLow": 8,
+              "refHigh": 45,
               "lab": "区中心医院"
             },
             {
-              "code": "Cr",
-              "value": 74,
-              "unit": "µmol/L",
-              "refLow": 40,
-              "refHigh": 84,
+              "code": "FBG",
+              "value": 5.9,
+              "unit": "mmol/L",
+              "method": null,
+              "refLow": 3.9,
+              "refHigh": 6.1,
+              "lab": "区中心医院"
+            },
+            {
+              "code": "SBP",
+              "value": 134,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
+              "lab": "区中心医院"
+            },
+            {
+              "code": "DBP",
+              "value": 81,
+              "unit": "mmHg",
+              "method": "诊室血压测量",
+              "refLow": null,
+              "refHigh": null,
               "lab": "区中心医院"
             }
           ]
@@ -1554,7 +1478,7 @@
         "hardUnmet": 0,
         "hardUnmetRules": [],
         "recordId": "t1",
-        "title": "【虚构示例】GCA 瘙痒症状管理登记研究",
+        "title": "【虚构示例】GCA 症状负担登记研究",
         "sourceId": "ctgov",
         "recruitmentStatus": "登记状态，未核实",
         "statusNote": "登记 ≠ 有效 ≠ 安全 ≠ 可入组",
@@ -1570,10 +1494,10 @@
           {
             "tier": "satisfied",
             "rule": "入选：登记病种与本人诊断一致",
-            "mine": "原发性硬化性胆管炎（GCA）",
+            "mine": "巨细胞动脉炎（GCA）",
             "hard": true,
             "source": "本工作台只服务 GCA 患者",
-            "why": "条目要求\"有这一项\"，本机记录：原发性硬化性胆管炎（GCA）"
+            "why": "条目要求\"有这一项\"，本机记录：巨细胞动脉炎（GCA）"
           },
           {
             "tier": "undetermined",
@@ -1609,10 +1533,10 @@
           {
             "tier": "satisfied",
             "rule": "入选：登记病种与本人诊断一致",
-            "mine": "原发性硬化性胆管炎（GCA）",
+            "mine": "巨细胞动脉炎（GCA）",
             "hard": true,
             "source": "本工作台只服务 GCA 患者",
-            "why": "条目要求\"有这一项\"，本机记录：原发性硬化性胆管炎（GCA）"
+            "why": "条目要求\"有这一项\"，本机记录：巨细胞动脉炎（GCA）"
           },
           {
             "tier": "undetermined",
@@ -1630,7 +1554,7 @@
         "hardUnmet": 0,
         "hardUnmetRules": [],
         "recordId": "t2",
-        "title": "【虚构示例】GCA 胆管炎发作频率研究",
+        "title": "【虚构示例】GCA 复发频率与托珠单抗研究",
         "sourceId": "ctgov",
         "recruitmentStatus": "登记状态，未核实",
         "statusNote": "登记 ≠ 有效 ≠ 安全 ≠ 可入组",
@@ -1646,10 +1570,10 @@
           {
             "tier": "satisfied",
             "rule": "入选：登记病种与本人诊断一致",
-            "mine": "原发性硬化性胆管炎（GCA）",
+            "mine": "巨细胞动脉炎（GCA）",
             "hard": true,
             "source": "本工作台只服务 GCA 患者",
-            "why": "条目要求\"有这一项\"，本机记录：原发性硬化性胆管炎（GCA）"
+            "why": "条目要求\"有这一项\"，本机记录：巨细胞动脉炎（GCA）"
           },
           {
             "tier": "undetermined",
@@ -1663,9 +1587,9 @@
     ]
   },
   "snapshotMeta": {
-    "snapshotDate": "2026-11-13",
-    "recordCount": 220,
-    "relevant": 148,
+    "snapshotDate": "2026-11-14",
+    "recordCount": 221,
+    "relevant": 149,
     "sources": [
       {
         "id": "chictr_online",

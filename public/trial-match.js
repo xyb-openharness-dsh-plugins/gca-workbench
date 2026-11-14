@@ -12,11 +12,12 @@
  *   3. 排序保持登记来源顺序（`ord`），**不按档位排**——按档位排会让用户以为前面的更"适合"；
  *   4. 登记 ≠ 有效 ≠ 安全 ≠ 可入组；状态永远写「登记状态，未核实」。
  *
- * GCA 的实情（本仓与 PBC 仓的差别，写下来免得下一个人照抄）：
- *   - **没有 driver 基因、没有靶点检测**：GCA 的诊断靠 MRCP/ERCP 影像 + 胆汁淤积生化，抗体只作参考。
- *     所以"建档"在 GCA 里落成三样：抗体参考状态（含「未检测」）、纤维化/肝硬化的**报告原文**、
- *     以及「有没有做过肝穿」——**不设基因面板**，硬加一个空表反而是假装有这项能力。
- *   - **入排条件原文没有采集**：本项目 479 条登记只抓到标题/登记号/状态，没有纳入排除标准原文。
+ * GCA 的实情（本仓与其他仓的差别，写下来免得下一个人照抄）：
+ *   - **没有 driver 基因、没有靶点检测**：GCA 的诊断靠临床表现（新发头痛、头皮压痛、
+ *     下颌跛行、视力症状）+ 炎症指标（ESR/CRP）+ 影像（颞动脉超声晕轮征等），抗体只作参考。
+ *     所以"建档"在 GCA 里落成三样：抗体参考状态（含「未检测」）、主要影像的**报告原文**、
+ *     以及最近一次 ESR/CRP——**不设基因面板**，硬加一个空表反而是假装有这项能力。
+ *   - **入排条件原文没有采集**：本项目登记只抓到标题/登记号/状态，没有纳入排除标准原文。
  *     所以绝大多数条目只能落「待确认」，页面必须逐条说明**为什么**不可判定。
  */
 export const TIERS = Object.freeze({
@@ -40,30 +41,25 @@ export function factsOf(profile) {
     facts[key] = { valueText: String(valueText), source: source ?? null }
   }
 
-  /* 抗体：三态里「未检测」是一个**真实状态**，不是"阴性"。 */
-  const ab = p.antibodies ?? {}  // GCA：pANCA/ANA 只作参考三态，不作诊断依据
+  /* 抗体：三态里「未检测」是一个**真实状态**，不是"阴性"。GCA 无特异性抗体，ANA 只作参考。 */
+  const ab = p.antibodies ?? {}  // GCA：ANA 只作鉴别参考三态，不作诊断依据
   const abLabel = { positive: '阳性', negative: '阴性', untested: '未检测' }
-  put('panca', abLabel[ab.panca] ?? null, ab.note ?? null)
   put('ana', abLabel[ab.ana] ?? null, ab.note ?? null)
 
-  /* 纤维化 / 肝硬化：只搬报告原文，不自己判分期。
-     注意 `fibrosis` 这个键**只用于展示，不参与任何条款判定**——
-     实测踩过：「8.4 kPa」被当成"有肝硬化"而判成"符合入选"。弹性值不是肝硬化诊断，
-     这一条必须由报告原文说了算，所以另起一个 `cirrhosis` 键，只在报告原文
-     真的写了「肝硬化」时才有值。没写就是"本机没有这一项"，落待确认。 */
-  if (p.fibrosis?.value) {
-    put('fibrosis', p.fibrosis.value, p.fibrosis.date ? `报告日期 ${p.fibrosis.date}` : null)
-    if (/肝硬化|cirrhosis/i.test(String(p.fibrosis.value))) {
-      put('cirrhosis', `是（报告原文：${p.fibrosis.value}）`, p.fibrosis.date ? `报告日期 ${p.fibrosis.date}` : null)
-    }
+  /* 主要影像（颞动脉超声等）：只搬报告原文，不自己判受累范围。
+     注意 `imaging` 这个键**只用于展示，不参与任何条款判定**——
+     实测踩过：「可见晕轮征」被当成"确诊大血管受累"而判成"符合入选"。影像原文不是受累判定，
+     这一条必须由报告原文说了算，所以没记影像就是"本机没有这一项"，落待确认。 */
+  if (p.imaging?.value) {
+    put('imaging', p.imaging.value, p.imaging.date ? `报告日期 ${p.imaging.date}` : null)
   }
 
-  /* 最近一次化验的关键项（决定很多试验的入选线）。 */
+  /* 最近一次化验的关键项（炎症活动与血象；只并列数值，不判高低线）。 */
   const labs = Array.isArray(p.labs) ? p.labs : []
   const last = labs.length ? labs[labs.length - 1] : null
   if (last) {
     const pick = (code) => last.items.find((i) => i.code === code)
-    for (const code of ['ALP', 'TBil', 'PLT', 'ALB']) {
+    for (const code of ['ESR', 'CRP', 'Hb', 'PLT']) {
       const item = pick(code)
       if (!item || item.value === null || item.value === undefined) continue
       const ref = item.refHigh == null ? '' : `（上限 ${item.refHigh}）`
@@ -76,7 +72,7 @@ export function factsOf(profile) {
   if (meds.length) {
     const using = meds.filter((m) => m.inUse !== false)
     const names = using.map((m) => m.name).filter(Boolean)
-    put('udca_use', names.length ? `在用：${names.join('、')}` : '未在用（有用药记录但均标为已停）',
+    put('meds_use', names.length ? `在用：${names.join('、')}` : '未在用（有用药记录但均标为已停）',
       using[0]?.startDate ? `开始 ${using[0].startDate}` : null)
   }
 
@@ -87,7 +83,7 @@ export function factsOf(profile) {
   /* 诊断：本工作台只服务 GCA 患者（本仓不做分期/诊断判定，也不存 diagnosis 列），
      所以这一项的事实来自**工作台的适用范围**，不是从档案里"推断"出来的。
      写清来源，用户才知道这句话凭什么成立。 */
-  put('diagnosis', '原发性硬化性胆管炎（GCA）', '本工作台只服务 GCA 患者')
+  put('diagnosis', '巨细胞动脉炎（GCA）', '本工作台只服务 GCA 患者')
   put('is_patient', '是（已确诊的 GCA 患者）', '本工作台只服务 GCA 患者')
   return facts
 }
@@ -98,8 +94,8 @@ export function factsOf(profile) {
  * 两处都靠正则，所以词表要写清"这条说的是有事还是没事"。 */
 const NEGATIVE_FACT_RE = /^(未|没有|无|未见|阴性|未在做|未在用|没做过|否)/
 /* 「未检测 / 未做」不是阴性，也不是"没有这件事"——它是**本机没有这个信息**，
-   必须落「待确认」。把它并进 NEGATIVE_FACT_RE 会让「pANCA 未检测」被判成"pANCA 阴性"，
-   于是「入选：pANCA 阳性」变成"冲突"——这是替患者下了它没做过的结论。 */
+   必须落「待确认」。把它并进 NEGATIVE_FACT_RE 会让「ANA 未检测」被判成"ANA 阴性"，
+   于是「入选：ANA 阳性」变成"冲突"——这是替患者下了它没做过的结论。 */
 const UNKNOWN_FACT_RE = /^(未检测|未查|未做|不知道|不详)/
 const ABSENT_RULE_RE = /(排除|不符合|不应|不能|禁忌|除外)/
 
@@ -208,14 +204,13 @@ export function matchAll(trials, facts) {
  *
  * 只抽**登记文本里真的写着**的东西（标题/状态），一条都不编：
  *   - 标题提到「健康受试者 / 生物等效性」→ 加一条反向条款（仅招健康人），可由 `is_patient` 判定；
- *   - 标题提到本病种词 → 加一条「登记病种与本人诊断一致」，可判定；
- *   - 标题提到 pANCA / 核周型中性粒细胞胞质抗体 → 加一条「入选：pANCA 阳性（登记口径）」；
- *   - 标题提到肝硬化 → 加一条「入选：肝硬化（报告原文）」；
- *   - **永远**加一条「纳入/排除标准原文」且 `decidable=0` —— 本项目 479 条登记只采到
+ *   - 标题提到本病种词（巨细胞动脉炎 / giant cell arteritis / temporal arteritis / Horton /
+ *     GCA / 血管炎）→ 加一条「登记病种与本人诊断一致」，可判定；
+ *   - **永远**加一条「纳入/排除标准原文」且 `decidable=0` —— 本项目登记只采到
  *     标题/登记号/状态，没抓入排原文。这一条必须是「待确认」，而且页面上要说明原因，
  *     否则用户会把"三条待确认"读成"三条不符合"。
  */
-const DISEASE_TERMS = ['原发性硬化性胆管炎', '硬化性胆管炎', 'GCA', '胆管炎']
+const DISEASE_TERMS = ['巨细胞动脉炎', 'giant cell arteritis', 'temporal arteritis', 'horton', 'GCA', '血管炎']
 
 export function criteriaOf(trial) {
   const title = String(trial?.title ?? '')
@@ -229,15 +224,8 @@ export function criteriaOf(trial) {
       hard: 1,
     })
   }
-  if (DISEASE_TERMS.some((t) => title.includes(t))) {
+  if (DISEASE_TERMS.some((t) => title.toLowerCase().includes(t.toLowerCase()))) {
     out.push({ rule_text: '入选：登记病种与本人诊断一致', fact_key: 'diagnosis', decidable: 1, hard: 1 })
-  }
-  if (/\bpANCA\b|核周型中性粒细胞胞质抗体/i.test(title)) {
-    out.push({ rule_text: '入选：pANCA 阳性（登记口径）', fact_key: 'panca', decidable: 1 })
-  }
-  if (title.includes('肝硬化')) {
-    /* fact_key 用 cirrhosis 而不是 fibrosis：见 factsOf 里的注释（弹性值不是肝硬化）。 */
-    out.push({ rule_text: '入选：肝硬化（报告原文写着"肝硬化"）', fact_key: 'cirrhosis', decidable: 1 })
   }
 
   out.push({

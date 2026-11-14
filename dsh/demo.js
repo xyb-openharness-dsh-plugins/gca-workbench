@@ -10,10 +10,10 @@
  *
  * 对应关系（schema/0001_initial.sql + 0002_gca_m5.sql）：
  *   subjects（meta=档案名 label）+ profile_facts（0002：age/sex/确诊日/开始用药日/体重/
- *   抗体/纤维化/IBD/共病/依从/病程阶段/试验清单，值 JSON 编码）
- *   episode_events（发作—缓解第一实体，end IS NULL=发作未记缓解）
+ *   抗体/主要影像/PMR 共病/共病/依从/病程阶段/试验清单，值 JSON 编码）
+ *   episode_events（发作 flare 第一实体，end IS NULL=发作未记缓解）
  *   lab_results（可比组=method+org，demo 的 lab=机构 org；单据没印上限 refHigh=NULL）
- *   symptom_notes（0002 补 scratch 列）/ screening_records（只存医生安排原话，无排程列）/
+ *   symptom_notes（0002 补 vision_alert 列）/ screening_records（只存医生安排原话，无排程列）/
  *   visit_questions / documents / meds / metric_defs
  * 演示字符串 id（e1/q1/d1/t1）不落库，读模型按 rowid 序确定性合成（见 readmodels.js）。
  */
@@ -26,17 +26,14 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 /** GCA 指标目录：与原型 app.js 的 LABELS / METRIC_SERIES / CHART_COLORS 同一口径。
  *  分类只作分组展示键，不进趋势；库内不做任何参考范围判定。 */
 export const GCA_METRIC_DEFS = [
-  { key: 'ALP', title: '碱性磷酸酶 ALP', category: 'cholestasis', unit: 'U/L', color: '#5C6B3C', ord: 1 },
-  { key: 'GGT', title: 'γ-谷氨酰转肽酶 GGT', category: 'cholestasis', unit: 'U/L', color: '#A8681E', ord: 2 },
-  { key: 'TBil', title: '总胆红素 TBil', category: 'cholestasis', unit: 'µmol/L', color: '#3C5A6B', ord: 3 },
-  { key: 'ALT', title: '丙氨酸氨基转移酶 ALT', category: 'hepatocell', unit: 'U/L', color: '#8A4B6B', ord: 4 },
-  { key: 'AST', title: '天门冬氨酸氨基转移酶 AST', category: 'hepatocell', unit: 'U/L', color: '#4B6B8A', ord: 5 },
-  { key: 'ALB', title: '白蛋白 ALB', category: 'synthesis', unit: 'g/L', color: '#6B8A4B', ord: 6 },
-  { key: 'PLT', title: '血小板 PLT', category: 'synthesis', unit: '10⁹/L', color: '#8A6B4B', ord: 7 },
-  { key: 'Hb', title: '血红蛋白 Hb', category: 'blood', unit: 'g/L', color: '#B0563C', ord: 8 },
-  { key: 'WBC', title: '白细胞 WBC', category: 'blood', unit: '10⁹/L', color: '#5B7C99', ord: 9 },
-  { key: 'ANC', title: '中性粒细胞 ANC', category: 'blood', unit: '10⁹/L', color: '#997C5B', ord: 10 },
-  { key: 'Cr', title: '肌酐 Cr', category: 'renal', unit: 'µmol/L', color: '#7C5B99', ord: 11 },
+  { key: 'ESR', title: '血沉 ESR', category: 'inflam', unit: 'mm/h', color: '#5C6B3C', ord: 1 },
+  { key: 'CRP', title: 'C反应蛋白 CRP', category: 'inflam', unit: 'mg/L', color: '#A8681E', ord: 2 },
+  { key: 'Hb', title: '血红蛋白 Hb', category: 'hemogram', unit: 'g/L', color: '#3C5A6B', ord: 3 },
+  { key: 'PLT', title: '血小板 PLT', category: 'hemogram', unit: '10⁹/L', color: '#8A4B6B', ord: 4 },
+  { key: 'ALT', title: '丙氨酸氨基转移酶 ALT', category: 'steroid', unit: 'U/L', color: '#4B6B8A', ord: 5 },
+  { key: 'FBG', title: '空腹血糖 FBG', category: 'metabolic', unit: 'mmol/L', color: '#6B8A4B', ord: 6 },
+  { key: 'SBP', title: '收缩压 SBP', category: 'vital', unit: 'mmHg', color: '#B0563C', ord: 7 },
+  { key: 'DBP', title: '舒张压 DBP', category: 'vital', unit: 'mmHg', color: '#5B7C99', ord: 8 },
 ];
 
 /** 唯一源加载：public/demo-data.js（随包发出）优先，prototypes/v0.2/demo-data.js 兜底（开发仓）。 */
@@ -53,7 +50,7 @@ function loadDemoData() {
 
 /** 档案级非表列事实 → profile_facts（0002）。值 JSON 编码；null 值不入库（读模型按缺省 null 还原）。 */
 const FACT_KEYS = ['age', 'sex', 'diagnosedAt', 'startedAt', 'weightKg', 'antibodies',
-  'fibrosis', 'ibd', 'comorbidity', 'adherence', 'pathway', 'trials'];
+  'imaging', 'pmr', 'comorbidity', 'adherence', 'pathway', 'trials'];
 
 /**
  * 核心播种：把 profiles（buildDemoProfiles() 形状）灌进已建表的库。
@@ -67,7 +64,7 @@ export function seedDemo(db, profiles) {
   const factIns = db.prepare('INSERT INTO profile_facts (profile_key, fact_key, fact_value, ver) VALUES (?,?,?,1)');
   const epiIns = db.prepare('INSERT INTO episode_events (profile_key, start_date, end_date, hospital, signs_text, labs_note, treatment_text, action_plan, note, is_private, ver) VALUES (?,?,?,?,?,?,?,?,?,?,1)');
   const labIns = db.prepare('INSERT INTO lab_results (profile_key, metric_key, measured_on, value, value_text, unit, ref_low, ref_high, method, org, is_private, note, ver) VALUES (?,?,?,?,?,?,?,?,?,?,0,NULL,1)');
-  const symIns = db.prepare('INSERT INTO symptom_notes (profile_key, recorded_on, kind, itch_level, fatigue_level, night_worse, sleep_breaks, scratch, note, is_private, ver) VALUES (?,?,?,?,?,?,?,?,?,?,1)');
+  const symIns = db.prepare('INSERT INTO symptom_notes (profile_key, recorded_on, kind, headache_level, stiffness_level, scalp_tenderness, jaw_claud, vision_alert, note, is_private, ver) VALUES (?,?,?,?,?,?,?,?,?,?,1)');
   const scrIns = db.prepare('INSERT INTO screening_records (profile_key, kind, done_on, result_text, plan_text, org, is_private, ver) VALUES (?,?,?,?,?,?,0,1)');
   const qIns = db.prepare('INSERT INTO visit_questions (profile_key, question, done, created_on, is_private, ver) VALUES (?,?,?,?,0,1)');
   const docIns = db.prepare('INSERT INTO documents (id, profile_key, name, doc_date, parse_state, is_private) VALUES (?,?,?,?,?,0)');
@@ -93,12 +90,13 @@ export function seedDemo(db, profiles) {
         const isNumeric = typeof it.value === 'number' || /^\d+(\.\d+)?$/.test(String(it.value ?? ''));
         labIns.run(key, it.code, row.date ?? null, isNumeric ? Number(it.value) : null,
           isNumeric ? null : String(it.value ?? ''), it.unit ?? null,
-          it.refLow ?? null, it.refHigh ?? null, null, it.lab ?? null);
+          it.refLow ?? null, it.refHigh ?? null, it.method ?? null, it.lab ?? null);
       }
     }
     for (const s of p.symptoms ?? []) {
-      symIns.run(key, s.date ?? null, null, s.itch ?? null, s.fatigue ?? null,
-        s.nightWorse ? 1 : 0, s.sleepBreaks ?? null, s.scratch ? 1 : 0, s.note ?? '',
+      const b = (x) => (x == null ? null : (x ? 1 : 0));
+      symIns.run(key, s.date ?? null, s.kind ?? null, s.headache ?? null, s.stiffness ?? null,
+        b(s.scalp), b(s.jaw), b(s.vision), s.note ?? '',
         s.visibility === 'private' ? 1 : 0);
     }
     for (const s of p.screening ?? []) {

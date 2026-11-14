@@ -7,52 +7,39 @@
 
   const NAV = [
     { id: 'dashboard', label: '看板', subs: [['overview', '今日概览'], ['next', '接下来'], ['changes', '最近变化']] },
-    { id: 'basics', label: '我的病底', subs: [['diagnosis', '诊断与检查'], ['fibrosis', '弹性与影像'], ['comorbidity', '共病档案']] },
+    { id: 'basics', label: '我的病底', subs: [['diagnosis', '诊断与检查'], ['imaging', '影像复查'], ['comorbidity', '共病档案']] },
     { id: 'episodes', label: '发作与缓解', subs: [['list', '发作记录'], ['timeline', '时间线']] },
-    { id: 'treatment', label: '用药', subs: [['current', '当前用药'], ['pathway', '调药记录'], ['sideeffects', '副作用']] },
-    { id: 'labs', label: '化验', subs: [['cards', '指标卡'], ['chart', '一图秀'], ['grading', '分级说明']] },
-    { id: 'symptoms', label: '症状', subs: [['itch', '痒'], ['fatigue', '累'], ['log', '我的记录'], ['impact', '影响与睡眠']] },
-    { id: 'screening', label: '筛查随访', subs: [['colonoscopy', '肠镜（共病）'], ['mrcp', 'MRCP'], ['fibroscan', '弹性'], ['gallbladder', '胆囊'], ['endoscopy', '胃镜']] },
+    { id: 'treatment', label: '用药', subs: [['current', '当前用药'], ['pathway', '激素阶梯'], ['sideeffects', '副作用']] },
+    { id: 'labs', label: '化验', subs: [['cards', '指标卡'], ['chart', '一图秀'], ['refs', '参考区间说明']] },
+    { id: 'symptoms', label: '症状', subs: [['headache', '头痛'], ['stiffness', '晨僵'], ['log', '我的记录'], ['impact', '影响与预警']] },
+    { id: 'screening', label: '影像与随访', subs: [['ultrasound', '颞动脉超声'], ['biopsy', '颞动脉活检'], ['cta', 'CTA / MRA'], ['petct', 'PET-CT'], ['pmr', 'PMR 随访']] },
     { id: 'followup', label: '复查节奏', subs: [['cadence', '节奏卡'], ['prep', '就诊准备'], ['todos', '待办与问题']] },
     { id: 'records', label: '报告与资料', subs: [['import', '导入'], ['files', '原件'], ['export', '导出']] },
     { id: 'trials', label: '临床研究', subs: [['search', '检索'], ['saved', '收藏'], ['sources', '来源说明']] },
   ]
 
-  /* 成人通用参考下限：只在报告没印下限时"借"来用，且结果必须标 approx。
-     数值取自常规成人参考区间（各家实验室略有差异，所以界面必须写明是通用的）。 */
-  const GENERIC_LOW = { PLT: 125, Hb: 115, WBC: 3.5, ANC: 1.8, ALB: 40 }
-
-  const GRADE_CODES = {
-    ALP: { kind: 'uln', cuts: [1, 3, 5, 20], note: '×ULN' },
-    ALT: { kind: 'uln', cuts: [1, 3, 5, 20], note: '×ULN' },
-    AST: { kind: 'uln', cuts: [1, 3, 5, 20], note: '×ULN' },
-    TBil: { kind: 'uln', cuts: [1, 1.5, 3, 10], note: '×ULN' },
-    Cr: { kind: 'uln', cuts: [1, 1.5, 3, 6], note: '×ULN' },
-    PLT: { kind: 'abs', cuts: [75, 50, 25], dir: 'low', note: '10⁹/L' },
-    Hb: { kind: 'abs', cuts: [100, 80], dir: 'low', note: 'g/L', maxGrade: 3 },
-    WBC: { kind: 'abs', cuts: [3.0, 2.0, 1.0], dir: 'low', note: '10⁹/L' },
-    ANC: { kind: 'abs', cuts: [1.5, 1.0, 0.5], dir: 'low', note: '10⁹/L' },
-    ALB: { kind: 'abs', cuts: [30, 20], dir: 'low', note: 'g/L', maxGrade: 3 },
-  }
-  const LABELS = { ALP: '碱性磷酸酶 ALP', GGT: 'γ-谷氨酰转肽酶 GGT', ALT: '丙氨酸氨基转移酶 ALT', AST: '天门冬氨酸氨基转移酶 AST', TBil: '总胆红素 TBil', ALB: '白蛋白 ALB', PLT: '血小板 PLT', Hb: '血红蛋白 Hb', WBC: '白细胞 WBC', ANC: '中性粒细胞 ANC', Cr: '肌酐 Cr' }
+  /* 参考区间只来自「化验单自带」的原文：缺上限就如实写「单据未印上限」，
+     绝不用通用值补、不做分级、不给判读结论（GCA 非肿瘤红线）。 */
+  const LABELS = { ESR: '血沉 ESR', CRP: 'C反应蛋白 CRP', Hb: '血红蛋白 Hb', PLT: '血小板 PLT', ALT: '丙氨酸氨基转移酶 ALT', FBG: '空腹血糖 FBG', SBP: '收缩压 SBP', DBP: '舒张压 DBP' }
+  const UNITS = { ESR: 'mm/h', CRP: 'mg/L', Hb: 'g/L', PLT: '10⁹/L', ALT: 'U/L', FBG: 'mmol/L', SBP: 'mmHg', DBP: 'mmHg' }
 
   /* 一图秀的配色：**每个指标固定一个颜色**，选择变了颜色也不变——
-     否则用户换个勾选，ALP 从绿变橙，会以为看的是另一条线。 */
+     否则用户换个勾选，ESR 从绿变橙，会以为看的是另一条线。 */
   const CHART_COLORS = {
-    ALP: '#5C6B3C', GGT: '#A8681E', TBil: '#3C5A6B',
-    ALT: '#8A4B6B', AST: '#4B6B8A', ALB: '#6B8A4B',
-    PLT: '#8A6B4B', Hb: '#B0563C', WBC: '#5B7C99', ANC: '#997C5B', Cr: '#7C5B99',
+    ESR: '#5C6B3C', CRP: '#A8681E', Hb: '#3C5A6B',
+    PLT: '#8A4B6B', ALT: '#4B6B8A', FBG: '#6B8A4B',
+    SBP: '#B0563C', DBP: '#5B7C99',
   }
 
   /* 指标系列：卡片**按系列分组、组内按临床关注度排序**，不按化验单上的印刷顺序。
-     为什么必须分组：同一张单子上 ALP 与 Hb 相邻，但一个是胆汁淤积、一个是血象，
-     平铺一排会让患者以为它们可比。系列之间永不加总、永不换算（27 号 §1）。 */
+     为什么必须分组：同一张单子上 ESR 与 Hb 相邻，但一个是炎症活动、一个是血象，
+     平铺一排会让患者以为它们可比。系列之间永不加总、永不换算。 */
   const METRIC_SERIES = [
-    { key: 'cholestasis', title: '胆汁淤积', hint: 'GCA 的核心线：看趋势，不看单点', codes: ['ALP', 'GGT', 'TBil'] },
-    { key: 'hepatocyte', title: '肝细胞损伤', hint: '合并肝细胞损伤时才一起看', codes: ['ALT', 'AST'] },
-    { key: 'synthesis', title: '合成与储备', hint: '长期病程里比单次数值更值得留意', codes: ['ALB', 'PLT'] },
-    { key: 'blood', title: '血象', hint: '二线药与合并症情境用', codes: ['Hb', 'WBC', 'ANC'] },
-    { key: 'renal', title: '肾功能', hint: '用药安全上下文', codes: ['Cr'] },
+    { key: 'inflam', title: '炎症活动指标', hint: 'GCA 的核心线：看趋势，不看单点', codes: ['ESR', 'CRP'] },
+    { key: 'hemogram', title: '血象', hint: '长期病程与合并症情境用', codes: ['Hb', 'PLT'] },
+    { key: 'steroid', title: '激素监测', hint: '激素治疗期间按医生安排复查', codes: ['ALT'] },
+    { key: 'metabolic', title: '激素副作用监测', hint: '血糖与血压按医生安排记录', codes: ['FBG'] },
+    { key: 'vital', title: '血压', hint: '激素副作用监测情境用', codes: ['SBP', 'DBP'] },
   ]
 
   /* 组内序号：让"有序"是看得见的，而不是只存在于代码注释里 */
@@ -63,8 +50,7 @@
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s))
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
   /* 文字型结果（`<5`、`阴性`、`未检出`）必须变成 null，不能变成 NaN：
-     NaN 一路传进分级会算出 `ratio NaN` 并被判成 0 级 —— 界面上就是一片"正常"，
-     而真实含义恰恰相反（工作人员把"低于检出下限"当成了正常值）。 */
+     NaN 一路传进展示会算出 NaN 倍数 —— 界面上就是一片错误值。 */
   const num = (v) => {
     if (v == null || v === '') return null
     const n = Number(v)
@@ -72,30 +58,11 @@
   }
   const pct = (v) => (v == null ? '—' : String(Math.round(v * 10) / 10))
 
-  /* 分级：只做「对照」，不做诊断（缺上限 → needsUln，绝不用通用上限补） */
-  function gradeOf(item) {
-    const def = GRADE_CODES[item.code]
-    if (!def) return { state: 'none', reason: 'no-standard' }
-    const v = num(item.value)
-    if (v == null) return { state: 'none', reason: 'no-value' }
-    if (def.kind === 'uln') {
-      if (item.refHigh == null) return { state: 'needsUln' }
-      const ratio = v / item.refHigh
-      let g = 0
-      for (const c of def.cuts) if (ratio > c) g++
-      return { state: 'graded', grade: Math.min(g, 4), ratio }
-    }
-    /* 绝对阈值型：缺个人下限时借成人通用下限近似，但必须标 approx 让界面写「按通用下限」。
-       口径是「下限可以借，上限不能借」—— 上限一项都不能补（补了就是把别人的正常值当你家的），
-       下限补了只是让"偏低"这件事能被看见，而且补的时候界面会说明。 */
-    const lower = item.refLow == null ? GENERIC_LOW[item.code] ?? null : item.refLow
-    let g = 0
-    if (def.dir === 'low') {
-      if (lower != null && v < lower) g = 1
-      for (const c of def.cuts) if (v < c) g++
-    }
-    const max = def.maxGrade || 4
-    return { state: 'graded', grade: Math.min(g, max), approx: item.refLow == null }
+  /* 参考区间标注：只做「有/没有」的陈列，不做分级、不做判读（缺上限 → noHigh，绝不用通用上限补） */
+  function refOf(item) {
+    if (item.refHigh == null && item.refLow == null) return { state: 'none', reason: 'no-ref' }
+    if (item.refHigh == null) return { state: 'noHigh', reason: 'no-ref-high' }
+    return { state: 'withRef', refLow: item.refLow, refHigh: item.refHigh }
   }
 
   /* Fritsch–Carlson 单调三次插值：保证不越过相邻数据点（一图秀硬要求） */
@@ -146,11 +113,11 @@
     agentOpen: true,
     agentWidth: 35,
     page: null,
-    draft: { itch: 5, nightWorse: false, scratch: false, sleepBreaks: 1, fatigue: 2, note: '' },
+    draft: { headache: 5, stiffness: 2, scalp: false, jaw: false, vision: false, note: '' },
     localSymptoms: [],
     chartModal: false,
-    /* 一图秀选中的指标：默认三条胆汁淤积线。放在 state 里，切页签再回来不丢。 */
-    chartCodes: ['ALP', 'GGT', 'TBil'],
+    /* 一图秀选中的指标：默认三条线（炎症两条 + 血红蛋白）。放在 state 里，切页签再回来不丢。 */
+    chartCodes: ['ESR', 'CRP', 'Hb'],
     /* 匹配结果：null = 还没跑过（不显示空表，显示"跑一次"） */
     trialMatch: null,
   }
@@ -177,23 +144,23 @@
     'dashboard/next': vDashboardNext,
     'dashboard/changes': vDashboardChanges,
     'basics/diagnosis': vBasicsDiagnosis,
-    'basics/fibrosis': vBasicsFibrosis,
+    'basics/imaging': vBasicsImaging,
     'basics/comorbidity': vBasicsComorbidity,
     'treatment/current': vTreatmentCurrent,
     'treatment/pathway': vTreatmentPathway,
     'treatment/sideeffects': vTreatmentSide,
     'labs/cards': vLabsCards,
     'labs/chart': vLabsChart,
-    'labs/grading': vLabsGrading,
-    'symptoms/itch': vSymptomItch,
-    'symptoms/fatigue': vSymptomFatigue,
+    'labs/refs': vLabsRefs,
+    'symptoms/headache': vSymptomHeadache,
+    'symptoms/stiffness': vSymptomStiffness,
     'symptoms/log': vSymptomLog,
     'symptoms/impact': vSymptomImpact,
-    'screening/colonoscopy': () => vScreeningType('colonoscopy', '肠镜（IBD 共病监测）', '消化科肠镜记录；只抄报告原文与医生安排的复查节奏，不做异型增生判读。'),
-    'screening/mrcp': () => vScreeningType('mrcp', 'MRCP（胆管成像）', '胆管影像记录；显示距上次的月数，不替你决定何时复查。'),
-    'screening/fibroscan': () => vScreeningType('fibroscan', '肝脏弹性（FibroScan）', '弹性值原话记录；不判纤维化分期。'),
-    'screening/gallbladder': () => vScreeningType('gallbladder', '胆囊超声', '胆囊记录原话；不做处理判断。'),
-    'screening/endoscopy': () => vScreeningType('endoscopy', '胃镜（医生安排时）', '静脉曲张筛查记录；显示距上次的月数，不替你决定何时复查。'),
+    'screening/ultrasound': () => vScreeningType('us_temporal', '颞动脉超声（晕轮征 halo sign）', '颞动脉超声记录；只抄报告原文与医生安排的复查节奏，不做判读。'),
+    'screening/biopsy': () => vScreeningType('biopsy', '颞动脉活检（医生安排时）', '活检结果原话记录；不做诊断判读。'),
+    'screening/cta': () => vScreeningType('cta', 'CTA / MRA（大血管成像）', '大血管影像记录；显示距上次的月数，不替你决定何时复查。'),
+    'screening/petct': () => vScreeningType('petct', 'PET-CT（医生安排时）', 'PET-CT 记录原话；不做判读。'),
+    'screening/pmr': () => vScreeningType('pmr_followup', 'PMR 随访（医生已安排）', '风湿性多肌痛（PMR）随访记录；只呈现「医生已安排的随访」，不做共病判读。'),
     'episodes/list': vEpisodesList,
     'episodes/timeline': vEpisodesTimeline,
     'followup/cadence': vFollowupCadence,
@@ -294,24 +261,36 @@
     return `<div class="kv"><span class="k">${esc(k)}</span><span class="v">${v}</span>${n ? `<span class="n">${esc(n)}</span>` : ''}</div>`
   }
   function badgeFor(item) {
-    const g = gradeOf(item)
-    if (g.state === 'needsUln') return '<span class="badge needs">需参考上限</span>'
-    if (g.state === 'none') return '<span class="badge">未分级</span>'
-    return `<span class="badge grade">对照 CTCAE v5.0 · ${g.grade} 级</span>`
+    const r = refOf(item)
+    if (r.state === 'noHigh') return '<span class="badge needs">单据未印上限</span>'
+    if (r.state === 'none') return '<span class="badge">无参考值</span>'
+    return `<span class="badge ok">有参考区间 · ${r.refLow}–${r.refHigh}（单据原文）</span>`
   }
 
   /* ------------------------------ 看板 ------------------------------ */
 
-  function miniAlpPoints(p) {
+  function miniInflamPoints(p) {
     const rows = []
-    for (const r of p.labs) { const it = r.items.find((x) => x.code === 'ALP'); if (it && it.refHigh) rows.push({ d: r.date, v: it.value / it.refHigh }) }
+    for (const r of p.labs) { const it = r.items.find((x) => x.code === 'CRP'); if (it && it.refHigh) rows.push({ d: r.date, v: it.value / it.refHigh }) }
     if (!rows.length) return '<text x="10" y="35" font-size="10" fill="#7C8567">暂无可作图数据</text>'
     const vals = rows.map((r) => r.v)
     const max = Math.max(...vals, 1.2), min = Math.min(...vals, 0.5)
     const pts = rows.map((r, i) => ({ x: 12 + (i * 176) / Math.max(rows.length - 1, 1), y: 8 + (1 - (r.v - min) / Math.max(max - min, 0.01)) * 44 }))
     const line = pts.map((pt, i) => (i ? 'L' : 'M') + pt.x.toFixed(1) + ' ' + pt.y.toFixed(1)).join(' ')
     const last = pts[pts.length - 1]
-    return `<path d="${line}" fill="none" stroke="#5C6B3C" stroke-width="2"></path><circle cx="${last.x.toFixed(1)}" cy="${last.y.toFixed(1)}" r="3.5" fill="#5C6B3C"></circle>`
+    return `<path d="${line}" fill="none" stroke="#A8681E" stroke-width="2"></path><circle cx="${last.x.toFixed(1)}" cy="${last.y.toFixed(1)}" r="3.5" fill="#A8681E"></circle>`
+  }
+
+  function visionAlertCard() {
+    return `
+      <div class="card">
+        <div class="card-head"><span class="card-title">视力预警提示</span><span class="badge needs">只提醒，不判读</span></div>
+        <p class="muted" style="margin:4px 0">如果出现<b>新发视力下降、一过性视物模糊（黑朦）或复视</b>，请<b>当日就医</b>。本工作台只记录你写下的症状，不做判读、不给分诊结论。</p>
+        <div class="actions-row" style="margin-top:8px">
+          <button class="btn ghost small" type="button" data-goto="symptoms/headache">记一笔症状（含视力）</button>
+          <button class="btn ghost small" type="button" data-goto="symptoms/impact">看预警记录条数</button>
+        </div>
+      </div>`
   }
 
   function vDashboardOverview() {
@@ -319,7 +298,7 @@
     /* 真实库里"有档案但还没化验/没记感受"是常态。以前这里直接取最后一条再 .find().value，
        缺一条数据就抛错，整块业务区变空白——看起来就是"这个工作台没有界面"。 */
     const lastLabs = p.labs.length ? p.labs[p.labs.length - 1] : null
-    const alp = lastLabs ? lastLabs.items.find((i) => i.code === 'ALP') : null
+    const esr = lastLabs ? lastLabs.items.find((i) => i.code === 'ESR') : null
     const lastSym = sharedOnly(allSymptoms())[0]
     const answers = p.questions.filter((q) => !q.done).length
     const anchor = p.startedAt || ''
@@ -327,10 +306,11 @@
     const next = nextCadenceNode(p)
     const phase = p.label.includes('·') ? p.label.split('·').pop().trim() : p.label
     return `
+      ${visionAlertCard()}
       <div class="card">
         <div class="card-head"><span class="muted">${dayN == null
           ? '状态卡 · 还没有起点日期'
-          : `随访第 ${dayN} 天 · · ${next ? `距参考节点 ${next.days} 天` : '暂无参考节点'}`}</span></div>
+          : `随访第 ${dayN} 天 · ${next ? `距参考节点 ${next.days} 天` : '暂无参考节点'}`}</span></div>
         <div style="font-size:28px;font-weight:700;color:var(--brand);line-height:1.2">${dayN == null ? '还没有起点日期' : `随访第 ${dayN} 天`}</div>
         <p class="muted" style="margin-top:4px">${dayN == null
           ? '这个数字由你记的「开始用药日」算出来。去「我的病底」补上日期后，这里会显示随访第 N 天和下一个参考节点（工作台不推断病程）。'
@@ -344,17 +324,17 @@
       <div class="row-3">
         <div class="card">
           <div class="card-head"><span class="card-title">今天怎么样</span>${aiButton('我今天不太舒服，想记一笔', '看板·今天怎么样')}</div>
-          <p class="muted">记一次痒或累，20 秒完成。也可以点右上角「对话」交给原生会话。</p>
+          <p class="muted">记一次头痛或晨僵，20 秒完成。也可以点右上角「对话」交给原生会话。</p>
           <div class="actions-row" style="margin-top:8px">
-            <button class="btn" type="button" data-goto="symptoms/itch">记一笔痒</button>
-            <button class="btn ghost" type="button" data-goto="symptoms/fatigue">记一笔累</button>
+            <button class="btn" type="button" data-goto="symptoms/headache">记一笔头痛</button>
+            <button class="btn ghost" type="button" data-goto="symptoms/stiffness">记一笔晨僵</button>
           </div>
         </div>
         <div class="card mini-chart">
-          <div class="card-head"><span class="card-title">ALP 最近走势（缩略）</span><span class="pill">点末点看详情</span></div>
-          <button class="mini-pt" type="button" data-open="chart" data-metric="ALP" aria-label="看 ALP 最近一次数据点详情">
-            <svg viewBox="0 0 200 60" role="img" aria-label="ALP 缩略走势，末点可点开数据点详情">
-              ${miniAlpPoints(p)}
+          <div class="card-head"><span class="card-title">CRP 最近走势（缩略）</span><span class="pill">点末点看详情</span></div>
+          <button class="mini-pt" type="button" data-open="chart" data-metric="CRP" aria-label="看 CRP 最近一次数据点详情">
+            <svg viewBox="0 0 200 60" role="img" aria-label="CRP 缩略走势，末点可点开数据点详情">
+              ${miniInflamPoints(p)}
             </svg>
           </button>
           <p class="muted" style="margin-top:6px;font-size:12.5px">仅回顾，不解读；完整趋势见「化验 · 一图秀」。<button class="btn ghost small" type="button" data-open="labs">化验速览（整页层）</button></p>
@@ -362,15 +342,15 @@
         <div class="card">
           <div class="card-head"><span class="card-title">接下来</span></div>
           ${kv('参考复查节点', next ? `${esc(next.date)}（${next.days} 天后）` : '还没有起点日期', '±30 天是工作台显示带宽，不是指南内容')}
-          <p class="muted" style="margin-top:6px">起点 ${esc(anchor || '未记录')} · 按 6 个月间隔往后推，未按分期调整</p>
+          <p class="muted" style="margin-top:6px">起点 ${esc(anchor || '未记录')} · 按 6 个月间隔往后推，复查内容以医生安排为准</p>
           <div class="actions-row" style="margin-top:8px">
             <button class="btn ghost small" type="button" data-goto="followup/cadence">看复查节奏怎么算的</button>
           </div>
         </div>
         <div class="card">
           <div class="card-head"><span class="card-title">最近变化</span></div>
-          ${kv('最近一次 ALP', alp ? `${alp.value} U/L` : '还没有化验记录', lastLabs ? `${lastLabs.date}${lastLabs.items[0] ? ` · ${lastLabs.items[0].lab}` : ''}` : '')}
-          ${kv('最近一次记录的感受', lastSym ? `${lastSym.itch == null ? '痒 未记' : `痒 ${lastSym.itch}/10`} · ${lastSym.fatigue == null ? '累 未记' : `累 ${lastSym.fatigue}/3`}` : '无', lastSym ? lastSym.date : '')}
+          ${kv('最近一次 ESR', esr ? `${esr.value} ${UNITS.ESR}${esr.method ? '（' + esc(esr.method) + '）' : ''}` : '还没有化验记录', lastLabs ? `${lastLabs.date}${lastLabs.items[0] ? ` · ${lastLabs.items[0].lab}` : ''}` : '')}
+          ${kv('最近一次记录的感受', lastSym ? `头痛 ${lastSym.headache == null ? '未记' : lastSym.headache + '/10'} · 晨僵 ${lastSym.stiffness == null ? '未记' : lastSym.stiffness + '/3'}` : '无', lastSym ? lastSym.date : '')}
           <p class="muted" style="margin-top:6px">只并列事实，不判断好坏。</p>
           <div class="actions-row" style="margin-top:8px">
             <button class="btn ghost small" type="button" data-goto="labs/chart">看上次化验的趋势</button>
@@ -418,25 +398,25 @@
 
   function vDashboardChanges() {
     const p = profile()
-    const series = seriesFor(p, 'ALP')
+    const series = seriesFor(p, 'ESR')
     if (!series.length) {
       return `<div class="card">
         <div class="card-head"><span class="card-title">这 6 个月</span><span class="muted">只列变化，不给结论</span></div>
-        <p class="muted">档案里还没有 ALP 数值，所以画不了趋势。导入一张化验单后，这里会按日期连成线。</p>
+        <p class="muted">档案里还没有 ESR 数值，所以画不了趋势。导入一张化验单后，这里会按日期连成线。</p>
         <div class="actions-row" style="margin-top:8px"><button class="btn ghost" type="button" data-goto="records/import">导入化验单</button></div>
       </div>`
     }
     const first = series[0], last = series[series.length - 1]
-    const ratio = (x) => (x.refHigh ? x.value / x.refHigh : null)
+    const ref = (x) => (x.refHigh != null ? `${x.value} ${UNITS.ESR}（单据上限 ${x.refHigh}）` : `${x.value} ${UNITS.ESR}（单据未印上限）`)
     return `
       <div class="card">
         <div class="card-head"><span class="card-title">这 6 个月</span><span class="muted">只列变化，不给结论</span></div>
         <div class="row-3">
-          ${kv('ALP 首次', `${first.value} U/L（${pct(ratio(first))}×ULN）`, first.date)}
-          ${kv('ALP 最近', `${last.value} U/L（${pct(ratio(last))}×ULN）`, last.date)}
+          ${kv('ESR 首次', ref(first), first.date)}
+          ${kv('ESR 最近', ref(last), last.date)}
           ${kv('记录次数', `${series.length} 次化验`, `最近一次 ${last.date}`)}
         </div>
-        <div style="margin-top:10px">${oneChart(p, ['ALP', 'GGT', 'TBil'])}</div>
+        <div style="margin-top:10px">${oneChart(p, ['ESR', 'CRP', 'Hb'])}</div>
         <p class="chart-note">每条线按自身全期 min/max 归一化，**数值之间不可直接比较**；单点不连线。</p>
       </div>`
   }
@@ -447,11 +427,11 @@
     const tri = (v) => ({ positive: '阳性', negative: '阴性', untested: '未检测' }[v] || '未记录')
     return `
       <div class="card">
-        <div class="card-head"><span class="card-title">诊断要素（照抄报告，不判读）</span>${aiButton('我想补一下确诊时的抗体结果', '病底·诊断与抗体')}</div>
+        <div class="card-head"><span class="card-title">诊断要素（照抄报告，不判读）</span>${aiButton('我想补一下确诊时的检查结果', '病底·诊断与检查')}</div>
         <div class="row">
           ${kv('确诊日期', esc(p.diagnosedAt))}
-          ${kv('pANCA', tri(p.antibodies.panca), '三态：阳性 / 阴性 / 未检测；GCA 只作参考，不作诊断依据')}
-          ${kv('ANA', tri(p.antibodies.ana))}
+          ${kv('ANA（鉴别参考）', tri(p.antibodies.ana), '三态：阳性 / 阴性 / 未检测；GCA 无特异性抗体，只作参考，不作诊断依据')}
+          ${kv('主要影像', p.imaging ? esc(p.imaging.method) : '未记录', p.imaging && p.imaging.date ? esc(p.imaging.date) : '')}
         </div>
         <p class="muted" style="margin-top:8px">备注：${esc(p.antibodies.note)}</p>
       <div class="actions-row" style="margin-top:10px">
@@ -461,18 +441,18 @@
       </div>`
   }
 
-  function vBasicsFibrosis() {
+  function vBasicsImaging() {
     const p = profile()
-    /* 刚确诊的档案可能还没有弹性/影像检查（fibrosis = null）：如实写「未记录」，
+    /* 刚确诊的档案可能还没有影像复查记录（imaging = null）：如实写「未记录」，
        不能因为缺一块数据让整页画不出来。 */
-    const f = p.fibrosis || {}
+    const f = p.imaging || {}
     return `
       <div class="card">
-        <div class="card-head"><span class="card-title">纤维化与影像</span></div>
+        <div class="card-head"><span class="card-title">影像与复查</span></div>
         ${kv('检查方式', f.method ? esc(f.method) : '未记录', '不同方式的结果不互相换算')}
         ${kv('结果原文', f.value ? esc(f.value) : '还没有记录')}
         ${kv('日期', f.date ? esc(f.date) : '未记录')}
-        <p class="muted" style="margin-top:8px">${f.note ? esc(f.note) + '。' : '本档案还没有弹性或影像检查记录。'}工作台**不判断纤维化分期**，也不把弹性值换算成分级。</p>
+        <p class="muted" style="margin-top:8px">${f.note ? esc(f.note) + '。' : '本档案还没有影像复查记录。'}工作台**不判断血管受累进展**，也不把影像原文换算成分级。更多影像复查见「影像与随访」。</p>
       </div>`
   }
 
@@ -482,13 +462,13 @@
       <div class="card">
         <div class="card-head"><span class="card-title">合并症档案</span><span class="muted">各科各记，在这里归集</span></div>
         ${p.comorbidity.length ? `<ul class="list">${p.comorbidity.map((c) => `<li><span class="time">${esc(c.since)}</span><span><b>${esc(c.name)}</b><br><span class="muted">${esc(c.note)}</span></span></li>`).join('')}</ul>` : '<p class="muted">还没有记录</p>'}
-        <p class="muted" style="margin-top:8px">合并症的诊断与治疗由各专科医生判断，本页只做记录。</p>
+        <p class="muted" style="margin-top:8px">合并症（含 PMR）的诊断与治疗由各专科医生判断；PMR 只以「医生已安排的随访」口径呈现，本页只做记录。</p>
       </div>`
   }
 
   /* --------------------------- 发作与缓解（GCA 专属线） ---------------------------
-   * 折叠单元 = 一次发作（非肿瘤不套疗程/线序语义）。只记录已发生事实与医生行动计划
-   * 原文；发作判定（是不是胆管炎）归医生，界面只写"医生诊断为胆管炎/医生处置原文"。
+   * 折叠单元 = 一次发作（flare，非肿瘤不套疗程/线序语义）。只记录已发生事实与医生行动计划
+   * 原文；发作判定（是不是 GCA 活动）归医生，界面只写"医生处置原文"。
    * 空态给下一步按钮（家族基线）。 */
   function vEpisodesList() {
     const p = profile()
@@ -507,8 +487,8 @@
               ${kv('行动计划', e.actionPlan ? esc(e.actionPlan) : '【待核：请录入医生给的计划原文】')}
             </div>
             <p class="muted" style="margin-top:6px">${esc(e.note || '')}</p>
-          </details>`).join('') : emptyState('还没有发作记录', '发作（如发热寒战、尿色加深）发生后在这里记一笔，包括医生给的处置原文。', '记一次发作', 'episode-new')}
-        <p class="muted" style="margin-top:8px">本页只回顾已发生的事实。发作是不是胆管炎、该怎么处理，由医生判断；计划原文请逐字录入。</p>
+          </details>`).join('') : emptyState('还没有发作记录', '发作（如新发头痛加重、头皮压痛、视力症状）发生后在这里记一笔，包括医生给的处置原文。', '记一次发作', 'episode-new')}
+        <p class="muted" style="margin-top:8px">本页只回顾已发生的事实。发作是不是 GCA 活动、该怎么处理，由医生判断；计划原文请逐字录入。</p>
       </div>`
   }
 
@@ -557,7 +537,7 @@
     return `
       <div class="card">
         <div class="card-head"><span class="card-title">当前用药</span>${aiButton('我在吃的药想记一下', '用药·当前用药')}</div>
-        ${p.meds.map((m) => `
+        ${p.meds.filter((m) => m.inUse).map((m) => `
           <div class="stack" style="border-bottom:1px dashed var(--line);padding-bottom:8px;margin-bottom:8px">
             ${kv(m.name, esc(m.doseText), `${m.freq} · 起 ${m.startDate}`)}
             <div><span class="badge needs">获批状态未核实</span></div>
@@ -579,7 +559,7 @@
     const p = profile()
     return `
       <div class="card">
-        <div class="card-head"><span class="card-title">治疗路径（默认概要，点开看细节）</span><span class="ph-hint">打印时全部展开</span></div>
+        <div class="card-head"><span class="card-title">用药经过 · 激素阶梯（默认概要，点开看细节）</span><span class="ph-hint">打印时全部展开</span></div>
         ${p.pathway.map((ph) => `
           <details class="phase-fold" style="margin-bottom:8px">
             <summary><span class="phase-dot"></span><b>${esc(ph.phase)}</b><span class="muted">· ${esc(ph.d)}</span><span>· ${esc(ph.text)}</span></summary>
@@ -591,7 +571,7 @@
               ${pdBlock('心理/营养措施和效果', ph.detail.support)}
             </div>
           </details>`).join('')}
-        <p class="muted">每张卡固定五块：方案 / 指标和趋势 / 影像发现 / 副作用总结 / 心理营养措施和效果；无内容写「无 + 说明」，不省略块。</p>
+        <p class="muted">每张卡固定五块：方案 / 指标和趋势 / 影像发现 / 副作用总结 / 心理营养措施和效果；无内容写「无 + 说明」，不省略块。激素剂量只按日期陈列医嘱原文，不做疗效判断。</p>
       </div>`
   }
   function pdBlock(title, block) {
@@ -605,17 +585,17 @@
       <div class="card">
         <div class="card-head"><span class="card-title">副作用记录</span>${aiButton('我吃药后有点不舒服，想记一下', '用药·副作用')}</div>
         <ul class="list">
-          <li><span class="time">2026-03</span><span>服药后腹胀，程度自评轻；处理原文：未处理</span></li>
-          <li><span class="time">2025-12</span><span>偶有恶心，饭后缓解（患者自述）</span></li>
+          <li><span class="time">2026-03</span><span>激素加量后夜间胃部不适，程度自评轻；处理原文：随餐服用（患者自述）</span></li>
+          <li><span class="time">2025-12</span><span>注射托珠单抗当晚低热，次日缓解（患者自述）</span></li>
         </ul>
-        <p class="muted" style="margin-top:8px">副作用不归因、不评级（本癌种未启用 CTCAE 症状分级），只记时间与原文。</p>
+        <p class="muted" style="margin-top:8px">副作用不归因、不评级，只记时间与原文；血糖与血压等激素副作用监测见「化验 · 指标卡」。</p>
       </div>`
   }
 
-  /* ------------------------------ 生化线 ------------------------------ */
+  /* ------------------------------ 化验线 ------------------------------ */
   function mcard(it, p, last, order) {
     const series = seriesFor(p, it.code)
-    const g = gradeOf(it)
+    const r = refOf(it)
     const prev = series.length > 1 ? series[series.length - 2] : null
     const delta = prev && it.value != null && prev.value != null ? (Number(it.value) - Number(prev.value)) : null
     return `
@@ -624,15 +604,15 @@
           <div class="mface front">
             <span class="label"><span class="ord">${order || ''}</span>${esc(LABELS[it.code] || it.code)}</span>
             <span class="value">${esc(it.value)} <small>${esc(it.unit || '')}</small></span>
-            <span class="delta">${delta == null ? '无前次可比' : `较前次 ${delta > 0 ? '+' : ''}${delta}`}${it.refHigh == null ? '' : ` · 参考上限 ${it.refHigh}`}</span>
+            <span class="delta">${delta == null ? '无前次可比' : `较前次 ${delta > 0 ? '+' : ''}${delta}`}${it.refHigh == null ? '' : ` · 参考上限 ${it.refHigh}`}${it.method ? ` · ${esc(it.method)}` : ''}</span>
             <span>${badgeFor(it)}</span>
             <span class="src">${esc(it.lab)} · ${esc(last.date)}<span class="flip-hint">翻面看全期 ▸</span></span>
           </div>
           <div class="mface back">
             <span class="label">${esc(LABELS[it.code] || it.code)} · 全期 ${series.length} 点</span>
             ${spark(series.map((s) => s.value))}
-            <ul class="pt-list">${series.slice(-4).map((x) => `<li><span>${esc(x.date)}</span><b>${esc(x.value)}</b>${x.refHigh == null ? '<i>无上限</i>' : `<i>${pct(x.value / x.refHigh)}×ULN</i>`}</li>`).join('')}</ul>
-            <span class="src">${g.state === 'needsUln' ? '这张单子没有上限，无法算倍数' : g.state === 'graded' ? `对照 CTCAE v5.0（${g.ratio ? pct(g.ratio) + '×ULN' : '绝对阈值'}）` : '该项无 CTCAE 分级'}</span>
+            <ul class="pt-list">${series.slice(-4).map((x) => `<li><span>${esc(x.date)}</span><b>${esc(x.value)}</b>${x.refHigh == null ? '<i>无上限</i>' : `<i>单据上限 ${x.refHigh}</i>`}</li>`).join('')}</ul>
+            <span class="src">${r.state === 'noHigh' ? '这张单子没有上限，如实标注（不判读）' : r.state === 'withRef' ? `参考区间 ${r.refLow}–${r.refHigh}（单据原文）` : '本单没有参考值'}</span>
           </div>
         </div>
       </div>`
@@ -653,8 +633,8 @@
     const leftovers = last.items.filter((it) => !METRIC_SERIES.some((series) => series.codes.includes(it.code)))
     return `
       <div class="card">
-        <div class="card-head"><span class="card-title">最近一次化验 · ${esc(last.date)}</span>${aiButton('帮我看看这次化验有什么变化', '生化线·指标卡')}</div>
-        <p class="muted">按系列分组，组内按临床关注度排序。点卡片翻到背面看这条线的全期走势；缺参考上限的会标「需参考上限」，不会用通用值补。</p>
+        <div class="card-head"><span class="card-title">最近一次化验 · ${esc(last.date)}</span>${aiButton('帮我看看这次化验有什么变化', '化验线·指标卡')}</div>
+        <p class="muted">按系列分组，组内按临床关注度排序。点卡片翻到背面看这条线的全期走势；参考区间一律用单据自带的原文，缺上限的标「单据未印上限」，不会用通用值补，也不做分级判读。</p>
       </div>
       ${groups.map((series) => `
         <section class="metric-series" aria-label="${esc(series.title)}">
@@ -713,7 +693,7 @@
     }).join('')
     return `
       <div class="chart-wrap">
-        <svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="ALP、GGT、总胆红素的时间序列（各自归一化，不可直接比较）">
+        <svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="ESR、CRP、血红蛋白的时间序列（各自归一化，不可直接比较）">
           ${gridY}${events}
           ${lines.map((l) => `<path d="${l.d}" fill="none" stroke="${l.color}" stroke-width="1.8"/>`).join('')}
           ${lines.map((l) => l.pts.map((pt) => `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="2.4" fill="${l.color}"/>`).join('')).join('')}
@@ -723,7 +703,7 @@
         </svg>
         <div class="chart-legend">
           ${codes.map((c) => `<span class="legend-item"><span class="legend-swatch" style="background:${colors[c] || '#555'}"></span>${c}</span>`).join('')}
-          <span class="legend-item"><span class="legend-swatch" style="background:#CFCCB9;height:2px"></span>治疗节点（竖虚线）</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:#CFCCB9;height:2px"></span>用药节点（竖虚线）</span>
         </div>
       </div>`
   }
@@ -743,7 +723,7 @@
           <button class="btn ghost small" type="button" data-modal="chart">选择指标（已选 ${codes.length}/${available.length}）</button>
         </div>
         ${oneChart(p, codes)}
-        <p class="chart-note">单点不连线；治疗节点只作时间参照，不代表疗效。每条线只在自己的刻度里看走势。</p>
+        <p class="chart-note">单点不连线；用药节点只作时间参照，不代表疗效。每条线只在自己的刻度里看走势。</p>
       </div>
       <div class="modal${state.chartModal ? '' : ''}" id="chart-modal" ${state.chartModal ? '' : 'hidden'} role="dialog" aria-modal="true" aria-label="选择要在图里看的指标">
        <div class="modal-card card">
@@ -752,7 +732,7 @@
           <span class="muted">已选 ${codes.length} / ${available.length} · 最多同时看 5 条</span>
           <button class="icon-btn" type="button" data-modal-close="chart" aria-label="关闭">×</button>
         </div>
-        <p class="muted">勾上想看的那几条。颜色是固定的：换个勾选不会让 ALP 变成别的颜色。</p>
+        <p class="muted">勾上想看的那几条。颜色是固定的：换个勾选不会让 ESR 变成别的颜色。</p>
         <div class="chip-row" role="group" aria-label="选择要看的指标">
           ${available.map((c) => {
             const on = codes.includes(c)
@@ -762,70 +742,72 @@
           }).join('')}
         </div>
         <div class="actions-row" style="margin-top:8px">
-          <button class="btn ghost small" type="button" data-chart-code="__reset">回到默认三条（ALP / GGT / TBil）</button>
+          <button class="btn ghost small" type="button" data-chart-code="__reset">回到默认三条（ESR / CRP / Hb）</button>
         </div>
         <p class="muted" style="margin-top:6px">最多 5 条：再多线就挤在一起，谁也看不清自己的形状了。</p>
        </div>
       </div>
       <div class="card">
         <div class="card-head"><span class="card-title">口径</span></div>
-        <p class="muted">每条线各自按全期 min/max 归一化，所以"哪条更高"没有意义；要看倍数请回「指标卡」，那里按每张单子的参考上限算。</p>
+        <p class="muted">每条线各自按全期 min/max 归一化，所以"哪条更高"没有意义；要看参考区间请回「指标卡」，那里按每张单子自带的区间原文陈列。</p>
       </div>`
   }
 
-  function vLabsGrading() {
+  function vLabsRefs() {
     const p = profile()
     const last = p.labs[p.labs.length - 1]
     return `
       <div class="card">
-        <div class="card-head"><span class="card-title">分级说明（对照，不是诊断）</span></div>
+        <div class="card-head"><span class="card-title">参考区间说明（陈列，不是判读）</span></div>
         <ul class="list">
-          <li><span class="badge grade">对照 CTCAE v5.0 · 2 级</span><span>有参考上限时给的对照徽章；卡面同时给区间与实测倍数。</span></li>
-          <li><span class="badge needs">需参考上限</span><span>这张单子没印上限 → 不计算倍数、不给级别（下限可以借，上限不能借）。</span></li>
-          <li><span class="badge">未分级</span><span>该项在 CTCAE 里没有可用阈值（如 GGT），或单位无法确认。</span></li>
+          <li><span class="badge ok">有参考区间 · 单据原文</span><span>化验单自带参考区间时原样陈列；不同机构、不同方法的区间不合并、不连线。</span></li>
+          <li><span class="badge needs">单据未印上限</span><span>这张单子没印上限 → 只写下限与数值，不计算倍数、不给级别。</span></li>
+          <li><span class="badge">无参考值</span><span>血压等测量项单据未印参考值时如实留空。</span></li>
         </ul>
         <div class="row" style="margin-top:10px">
-          ${kv('本次可分级项', String(last.items.filter((i) => gradeOf(i).state === 'graded').length))}
-          ${kv('缺上限项', String(last.items.filter((i) => gradeOf(i).state === 'needsUln').length), '这些项不给级别')}
+          ${kv('本次有参考区间项', String(last.items.filter((i) => refOf(i).state === 'withRef').length))}
+          ${kv('缺上限项', String(last.items.filter((i) => refOf(i).state === 'noHigh').length), '这些项不给任何级别')}
         </div>
-        <p class="muted" style="margin-top:10px">工作台不生成疾病活动度或预后评分——那些是医生用的判定工具。界面也不写"好转/恶化"。</p>
+        <p class="muted" style="margin-top:10px">参考数值均为演示化验单自带的【待核】口径；工作台不生成疾病活动度或预后评分——那些是医生用的判定工具。界面也不写"好转/恶化"。</p>
       </div>`
   }
 
-  /* ------------------------------ 痒与累 ------------------------------ */
+  /* ------------------------------ 头痛与晨僵 ------------------------------ */
   function sliderRow(id, label, value, min, max, hint) {
     return `<div class="field"><label for="${id}">${esc(label)}：<b id="${id}-out">${value}</b>${hint ? ` <span class="muted">${esc(hint)}</span>` : ''}</label>
       <input type="range" id="${id}" min="${min}" max="${max}" value="${value}" step="1"></div>`
   }
 
-  function vSymptomItch() {
+  function vSymptomHeadache() {
     const d = state.draft
     return `
       <div class="card">
-        <div class="card-head"><span class="card-title">今天的痒</span>${aiButton('今天痒 6 分，晚上更重', '痒与累·今天的痒')}</div>
-        ${sliderRow('itch', '痒的程度（0–10，你自己打分）', d.itch, 0, 10, '不是医学量表，只是你的感觉')}
+        <div class="card-head"><span class="card-title">今天的头痛</span>${aiButton('今天颞部头痛 6 分，头皮压痛', '头痛与晨僵·今天的头痛')}</div>
+        ${sliderRow('headache', '头痛的程度（0–10，你自己打分）', d.headache, 0, 10, '不是医学量表，只是你的感觉')}
         <div class="row" style="margin-top:8px">
-          <label class="field"><span>夜间更重</span><span><input type="checkbox" id="night" ${d.nightWorse ? 'checked' : ''}> 勾选</span></label>
-          <label class="field"><span>抓破/留痕</span><span><input type="checkbox" id="scratch" ${d.scratch ? 'checked' : ''}> 勾选</span></label>
+          <label class="field"><span>头皮压痛</span><span><input type="checkbox" id="scalp" ${d.scalp ? 'checked' : ''}> 勾选</span></label>
+          <label class="field"><span>下颌跛行（嚼东西酸软）</span><span><input type="checkbox" id="jaw" ${d.jaw ? 'checked' : ''}> 勾选</span></label>
+          <label class="field"><span>视力症状（新发视物模糊/黑朦/复视）</span><span><input type="checkbox" id="vision" ${d.vision ? 'checked' : ''}> 勾选</span></label>
         </div>
-        <div class="field" style="margin-top:8px"><label for="note">一句描述（可空）</label><input type="text" id="note" value="${esc(d.note)}" placeholder="例如：小腿外侧，夜里最痒"></div>
+        <p class="muted" style="margin-top:6px">勾选「视力症状」只是记录：新发视力下降/黑朦/复视请<b>当日就医</b>；本工作台不做判读、不给分诊结论。</p>
+        <div class="field" style="margin-top:8px"><label for="note">一句描述（可空）</label><input type="text" id="note" value="${esc(d.note)}" placeholder="例如：左颞部胀痛，梳头都疼"></div>
         <div class="actions-row" style="margin-top:10px">
-          <button class="btn" type="button" id="save-itch">保存这一次</button>
+          <button class="btn" type="button" id="save-headache">保存这一次</button>
           <span class="muted">保存后进入「我的记录」，AI 不会替你打分</span>
         </div>
       </div>`
   }
 
-  function vSymptomFatigue() {
+  function vSymptomStiffness() {
     const d = state.draft
-    const opts = [['1', '能完成日常'], ['2', '勉强完成'], ['3', '做不了']]
+    const opts = [['1', '晨僵 30 分钟内'], ['2', '晨僵约 1 小时'], ['3', '晨僵超过 1 小时']]
     return `
       <div class="card">
-        <div class="card-head"><span class="card-title">今天的累</span>${aiButton('今天整个人没电，走两层楼要歇', '痒与累·今天的累')}</div>
-        <div class="segmented" id="fatigue-seg">
-          ${opts.map(([v, t]) => `<button type="button" data-fatigue="${v}" aria-pressed="${String(d.fatigue) === v}">${t}</button>`).join('')}
+        <div class="card-head"><span class="card-title">今天的晨僵</span>${aiButton('今天肩髋晨僵超过一小时', '头痛与晨僵·今天的晨僵')}</div>
+        <div class="segmented" id="stiffness-seg">
+          ${opts.map(([v, t]) => `<button type="button" data-stiffness="${v}" aria-pressed="${String(d.stiffness) === v}">${t}</button>`).join('')}
         </div>
-        <p class="muted" style="margin-top:8px">三档只是"今天能不能完成日常"，不是乏力分级量表。</p>
+        <p class="muted" style="margin-top:8px">三档只是"今天早上僵了多久"，不是晨僵分级量表；PMR 相关症状请按医生已安排的随访口径就诊。</p>
       </div>`
   }
 
@@ -837,19 +819,19 @@
         <ul class="list">
           ${list.map((s, i) => {
             const lab = profile().labs.find((r) => r.date === s.date)
-            const alp = lab ? lab.items.find((i2) => i2.code === 'ALP') : null
-            /* 没记的字段写"未记"，不能直接插值：`null` 会原样打出来变成「痒 null/10」，
+            const esr = lab ? lab.items.find((i2) => i2.code === 'ESR') : null
+            /* 没记的字段写"未记"，不能直接插值：`null` 会原样打出来变成「头痛 null/10」，
                患者会以为记录坏了；而「0 分」与「没记」在复诊回顾里是两件事，不能都显示成 0。 */
-            const itchTxt = s.itch == null ? '痒 未记' : `痒 ${s.itch}/10`
-            const fatTxt = s.fatigue == null ? '累 未记' : `累 ${s.fatigue}/3`
-            const sleepTxt = s.sleepBreaks == null ? '' : ` · 睡被打断 ${s.sleepBreaks} 次`
+            const headTxt = s.headache == null ? '头痛 未记' : `头痛 ${s.headache}/10`
+            const stiffTxt = s.stiffness == null ? '晨僵 未记' : `晨僵 ${s.stiffness}/3`
+            const flagTxt = [s.scalp ? '头皮压痛' : '', s.jaw ? '下颌跛行' : '', s.vision ? '视力症状（就医提醒）' : ''].filter(Boolean).join(' · ')
             const isPriv = s.visibility === 'private'
             const privBtn = `<button class="pill grey" type="button" data-privacy="mind${i + 1}" aria-pressed="${isPriv}"
               title="私密标记后：看板摘要 / 导出 / AI 上下文三处都不含这条">${isPriv ? '已私密（点此恢复共享）' : '设为私密'}</button>`
             return `<li><span class="time">${esc(s.date)}</span><span>
-              <b>${itchTxt} · ${fatTxt}</b>${s.nightWorse ? ' · 夜间重' : ''}${s.scratch ? ' · 抓破' : ''}${sleepTxt}
+              <b>${headTxt} · ${stiffTxt}</b>${flagTxt ? ` · ${flagTxt}` : ''}
               ${s.note ? `<br><span class="muted">${esc(s.note)}</span>` : ''}
-              <br><span class="muted">同日指标：${alp ? `ALP ${alp.value} U/L（${alp.refHigh ? pct(alp.value / alp.refHigh) + '×ULN' : '无上限'}）` : '当天没有化验'}</span>
+              <br><span class="muted">同日指标：${esr ? `ESR ${esr.value} ${UNITS.ESR}（${esr.refHigh == null ? '单据未印上限' : '单据上限 ' + esr.refHigh}）` : '当天没有化验'}</span>
               <br>${privBtn}
             </span></li>`
           }).join('')}
@@ -860,39 +842,40 @@
 
   function vSymptomImpact() {
     const list = allSymptoms()
-    const nights = list.filter((s) => s.nightWorse).length
-    const broken = list.reduce((a, b) => a + (b.sleepBreaks || 0), 0)
+    const visions = list.filter((s) => s.vision).length
+    const jaws = list.filter((s) => s.jaw).length
+    const longStiff = list.filter((s) => s.stiffness >= 3).length
     return `
       <div class="card">
-        <div class="card-head"><span class="card-title">影响与睡眠</span></div>
+        <div class="card-head"><span class="card-title">影响与预警</span></div>
         <div class="row-3">
-          ${kv('夜间加重的记录', `${nights} / ${list.length} 条`)}
-          ${kv('睡眠被打断累计', `${broken} 次`)}
-          ${kv('最近 30 天记录', `${list.filter((s) => s.date >= '2026-09-25').length} 条`)}
+          ${kv('视力症状记录', `${visions} / ${list.length} 条`, '新发视力下降/黑朦/复视 → 当日就医（仅提醒，不判读）')}
+          ${kv('下颌跛行记录', `${jaws} 条`)}
+          ${kv('晨僵超过 1 小时', `${longStiff} 条`)}
         </div>
         <p class="muted" style="margin-top:8px">这些数字只用于"复诊时说得清"，不代表病情轻重。</p>
       </div>`
   }
 
-  /* ------------------------------ 并发症筛查 ------------------------------ */
+  /* ------------------------------ 影像与随访 ------------------------------ */
   function vScreeningType(kind, title, desc) {
     const p = profile()
     const rec = p.screening.filter((s) => s.type === kind)
     return `
       <div class="card">
-        <div class="card-head"><span class="card-title">${esc(title)}</span>${aiButton(`我想记一次${title}的检查结果`, '筛查·' + title)}</div>
+        <div class="card-head"><span class="card-title">${esc(title)}</span>${aiButton(`我想记一次${title}的检查结果`, '影像与随访·' + title)}</div>
         <p class="muted">${esc(desc)}</p>
         ${rec.length ? `<ul class="list" style="margin-top:8px">
           ${rec.map((r) => `<li><span class="time">${esc(r.date)}</span><span>${esc(r.result)}${r.detail ? `<br><span class="muted">${esc(r.detail)}</span>` : ''}</span></li>`).join('')}
         </ul>` : '<p class="muted" style="margin-top:8px">还没有记录。</p>'}
-        ${kind === 'endoscopy' && rec.length ? `<p class="muted" style="margin-top:8px">距上次 ${monthsSince(rec[rec.length - 1].date)} 个月 · 参考间隔 12–24 个月（工作台默认值，不是指南内容）</p>` : ''}
+        ${kind === 'us_temporal' && rec.length && rec[rec.length - 1].date ? `<p class="muted" style="margin-top:8px">距上次 ${monthsSince(rec[rec.length - 1].date)} 个月 · 复查间隔以医生安排为准（工作台不排程）</p>` : ''}
         <details class="add-form">
           <summary>记一次${esc(title)}的结果</summary>
           <div class="row">
             <label class="field"><span>检查日期</span><input type="date" id="scr-date" value="${localToday()}"></label>
-            <label class="field"><span>报告原文</span><input type="text" id="scr-result" placeholder="照抄报告结论那一句，例如「腰椎 T 值 -1.8」"></label>
+            <label class="field"><span>报告原文</span><input type="text" id="scr-result" placeholder="照抄报告结论那一句，例如「左颞动脉低回声晕环」"></label>
           </div>
-          <label class="field" style="margin-top:8px"><span>补充（可空）</span><input type="text" id="scr-detail" placeholder="报告没写分级 / 换了一家医院"></label>
+          <label class="field" style="margin-top:8px"><span>补充（可空）</span><input type="text" id="scr-detail" placeholder="报告没写结论 / 换了一家医院"></label>
           <p class="muted">只抄报告原文。工作台不判断这个结果好不好，也不替你决定多久再查。</p>
           <div class="actions-row"><button class="btn" type="button" data-screening="${esc(kind)}" id="save-screening">保存这一次</button></div>
         </details>
@@ -936,7 +919,7 @@
         </ul>
         <div class="stack" style="margin-top:10px">
           ${kv('起点', esc(p.startedAt), '开始用药日；改起点会整体平移节点（不是"上次复查 + 间隔"）')}
-          ${kv('检查项', '肝功能 / 血常规 / 超声（按医生安排）', '工作台不替你决定查什么')}
+          ${kv('检查项', 'ESR / CRP / 血常规 / 血糖 / 血压（按医生安排）', '工作台不替你决定查什么')}
         </div>
         <p class="muted" style="margin-top:8px">工作台不发提醒、不弹通知；这里只是"下次大概什么时候"。</p>
       </div>`
@@ -950,7 +933,7 @@
         <ul class="list">
           ${p.questions.map((q) => `<li><input type="checkbox" ${q.done ? 'checked' : ''} aria-label="已问"> <span>${esc(q.text)}</span></li>`).join('')}
         </ul>
-        <div class="field" style="margin-top:8px"><label for="new-q">再加一条问题</label><input type="text" id="new-q" placeholder="例如：这次的 ALP 和上次比怎么样？"></div>
+        <div class="field" style="margin-top:8px"><label for="new-q">再加一条问题</label><input type="text" id="new-q" placeholder="例如：这次的 ESR 和上次比怎么样？"></div>
         <div class="actions-row" style="margin-top:8px">
           <button class="btn ghost" type="button" id="add-q">加进清单</button>
           <button class="btn" type="button" data-goto="records/export">导出给医生</button>
@@ -986,9 +969,9 @@
         <div class="card" style="margin-top:10px;background:#FCFBF5">
           <div class="card-head"><span class="card-title">候选（逐项核对）</span><span class="badge needs">未保存</span></div>
           <ul class="list">
-            <li><span>ALP</span><span class="muted">231 U/L · 上限 120 · 2026-10-08</span><span class="badge grade">核对后入档</span></li>
-            <li><span>GGT</span><span class="muted">171 U/L · 上限 45 · 2026-10-08</span></li>
-            <li><span>总胆红素</span><span class="muted">13 µmol/L · 上限 21 · 2026-10-08</span></li>
+            <li><span>ESR</span><span class="muted">52 mm/h · Westergren · 上限 30 · 2026-10-08</span><span class="badge ok">核对后入档</span></li>
+            <li><span>CRP</span><span class="muted">31 mg/L · 上限 10 · 2026-10-08</span></li>
+            <li><span>血红蛋白</span><span class="muted">124 g/L · 上限 150 · 2026-10-08</span></li>
           </ul>
           <div class="actions-row" style="margin-top:8px">
             <button class="btn" type="button" id="confirm-cand">确认这 3 项</button>
@@ -1034,19 +1017,21 @@
   function trialDossierCard(p) {
     const ab = p.antibodies || {}
     const last = p.labs[p.labs.length - 1]
-    const alp = last.items.find((i) => i.code === 'ALP')
-    const biopsy = p.fibrosis && /活检|穿刺|biopsy/i.test(String(p.fibrosis.method || '')) ? p.fibrosis : null
+    const esr = last.items.find((i) => i.code === 'ESR')
+    const crp = last.items.find((i) => i.code === 'CRP')
+    const imaging = p.imaging || {}
+    const biopsyRec = (p.screening || []).find((s) => s.type === 'biopsy' && s.date && s.result)
     const rows = [
-      ['pANCA（参考）', { positive: '阳性', negative: '阴性', untested: '未检测' }[ab.panca], ab.note || '抗体报告'],
-      
-      ['ANA', { positive: '阳性', negative: '阴性', untested: '未检测' }[ab.ana], ab.note || '抗体报告'],
-      ['ALP', alp ? `${alp.value} U/L${alp.refHigh ? `（${pct(alp.value / alp.refHigh)}×ULN）` : '（这张单子未印上限）'}` : '无', last.date],
-      ['肝活检病理', biopsy ? biopsy.value : '本档案没有活检记录', biopsy ? biopsy.date : '—'],
+      ['ANA（鉴别参考）', { positive: '阳性', negative: '阴性', untested: '未检测' }[ab.ana], ab.note || '抗体报告'],
+      ['ESR（最近）', esr ? `${esr.value} ${UNITS.ESR}${esr.refHigh != null ? `（单据上限 ${esr.refHigh}）` : '（这张单子未印上限）'}` : '无', last.date],
+      ['CRP（最近）', crp ? `${crp.value} ${UNITS.CRP}` : '无', last.date],
+      ['主要影像（颞动脉超声）', imaging.value || '本档案没有影像记录', imaging.date || '—'],
+      ['颞动脉活检', biopsyRec ? biopsyRec.result : '本档案没有活检记录', biopsyRec ? biopsyRec.date : '—'],
     ]
     return `
       <div class="card">
         <div class="card-head"><span class="card-title">匹配建档</span><span class="muted">只有「已确认入库」的字段参与匹配</span></div>
-        <p class="muted">GCA 没有常规基因检测、也没有分子分型。能用来匹配的只有抗体参考谱、影像报告原文与生化——不假装有分子分型。</p>
+        <p class="muted">GCA 没有常规基因检测、也没有分子分型。能用来匹配的只有抗体鉴别参考、影像报告原文与炎症指标——不假装有分子分型。</p>
         <ul class="list" style="margin-top:8px">
           ${rows.map(([k, v, src]) => `<li><span class="time">${esc(k)}</span><span><b>${esc(v)}</b><br><span class="muted">来源：${esc(src)}</span></span></li>`).join('')}
         </ul>
@@ -1055,10 +1040,9 @@
         <div class="card-head"><span class="card-title">本地没建档的（这些永远「无法自动匹配」）</span></div>
         <ul class="list">
           <li><span class="muted">入排条件原文（本登记的纳入/排除标准尚未采集）</span></li>
-          <li><span class="muted">ECOG / 体力状态评分</span></li>
-          <li><span class="muted">既往 UDCA 疗程与剂量</span></li>
+          <li><span class="muted">既往激素疗程与剂量（完整阶梯以医嘱原文为准）</span></li>
           <li><span class="muted">近 3 个月合并用药与剂量</span></li>
-          ${biopsy ? '' : '<li><span class="muted">肝活检病理（本档案没有活检记录）</span></li>'}
+          ${biopsyRec ? '' : '<li><span class="muted">颞动脉活检病理（本档案没有活检记录）</span></li>'}
         </ul>
         <p class="muted" style="margin-top:6px">缺字段一律判「无法自动匹配」，不判「不适用」——工作台不替你下结论。</p>
       </div>`
@@ -1094,8 +1078,8 @@
     return last ? last.items.find((i) => i.code === code) || null : null
   }
 
-  /* 试验卡：结构参照 biliary-tract-workbench `trialCard()`——
-     粗筛符合度大字 + 四档 band + ✓/✕/? 逐条 + 硬性单列。 */
+  /* 试验卡：候选池口径写在卡头（已载 N / 快照 M / 相关 Y + 快照日期），
+     三档 ✓/✕/? 逐条 + 硬性单列；可对照 <2 时不给百分数。 */
   function trialCard(t) {
     const bandCls = { high: 'ok', partial: 'warn', needs_info: 'grey', ineligible: 'no' }[t.band] || 'grey'
     const mark = (tier) => (tier === 'satisfied' ? '✓' : tier === 'conflict' ? '✕' : '?')
@@ -1105,6 +1089,12 @@
         <div class="crit-line"><span class="crit-mark ${r.tier}">${mark(r.tier)}</span><b>${esc(r.rule)}</b>${r.hard ? '<span class="muted">硬性</span>' : ''}</div>
         <small><b>${esc({ satisfied: '符合', conflict: '冲突', undetermined: '待确认' }[r.tier])}</b> · ${esc(r.why)}${r.source ? ' · 记录来源：' + esc(r.source) : ''}</small>
       </div>`
+    /* 可对照（decidable）< 2 时不给粗筛符合度百分数：一两条对照算出的百分比毫无意义。 */
+    const showPct = t.decidable >= 2
+    const poolMeta = (typeof DEMO !== 'undefined' && DEMO.snapshotMeta) || null
+    const poolLine = poolMeta
+      ? `候选池口径：已载 ${poolMeta.recordCount ?? '?'} / 快照 ${poolMeta.snapshotDate ?? '未记'} / 标题含本病关键词 ${poolMeta.relevant ?? '?'}（检索词命中才进池，不是全库扫描）`
+      : '候选池口径：本机暂无已采集快照（research/gca/manifest 未生成）——演示条目为明示虚构（fictional:true），不构成候选池'
     return `<section class="trial-card ${t.band === 'ineligible' ? 'ineligible' : ''}">
       <div class="trial-top">
         <div>
@@ -1113,9 +1103,9 @@
             <span class="pill no">登记状态，未核实</span>
           </div>
           <h2>${esc(t.title)}</h2>
-          <p class="trial-reg">${esc(t.statusNote)}</p>
+          <p class="trial-reg">${esc(t.statusNote)}<br><span class="muted">${esc(poolLine)}</span></p>
         </div>
-        <div class="fit ${bandCls}"><b>${t.pct}<small>%</small></b><span>粗筛符合度</span><em>${esc(t.bandLabel)}</em></div>
+        <div class="fit ${bandCls}"><b>${showPct ? t.pct + '<small>%</small>' : '—'}</b><span>粗筛符合度</span><em>${esc(t.bandLabel)}</em></div>
       </div>
       <div class="match-counts">
         <span class="pill ok">符合 ${t.counts.satisfied}</span>
@@ -1124,7 +1114,7 @@
       </div>
       <div class="crit-list">${sorted.slice(0, 4).map(line).join('')}</div>
       ${sorted.length > 4 ? `<details class="crit-more"><summary>其余 ${sorted.length - 4} 条条件</summary><div class="crit-list">${sorted.slice(4).map(line).join('')}</div></details>` : ''}
-      <div class="small-note">粗筛符合度 = 符合项 ÷ 全部条件（未知项按 0 计，所以只会偏低、不会偏高）。
+      <div class="small-note">可对照条款不足 2 条时不出百分数（一两条对照算出的百分比毫无意义）。粗筛符合度 = 符合项 ÷ 全部条件（未知项按 0 计，所以只会偏低、不会偏高）。
         它不是入组资格，也不代表效果；硬性条件不满足的单列在下面。</div>
     </section>`
   }
@@ -1137,11 +1127,11 @@
       ${tiers.length ? `<div class="card facts-card">
         <div class="card-head"><span class="card-title">用来对照的病理特点</span><span class="muted">每一项都来自你的记录；没记的写「未记录」</span></div>
         <div class="fact-grid">${([
-          ['pANCA（参考）', p.antibodies.panca === 'positive' ? '阳性' : p.antibodies.panca === 'negative' ? '阴性' : '未检测', p.antibodies.note || '未记录'],
-          ['纤维化 / 影像', p.fibrosis ? p.fibrosis.value : '未记录', p.fibrosis ? p.fibrosis.date + ' · ' + p.fibrosis.method : '—'],
-          ['最近 ALP', `${lastLab('ALP')?.value ?? '未记录'} U/L`, lastLab('ALP') ? `${lastLab('ALP').lab} · ${lastLab('ALP').refHigh == null ? '本单未印上限' : '上限 ' + lastLab('ALP').refHigh}` : '—'],
-          ['最近总胆红素', `${lastLab('TBil')?.value ?? '未记录'} μmol/L`, lastLab('TBil') ? `上限 ${lastLab('TBil').refHigh ?? '未印'}` : '—'],
-          ['最近血小板', `${lastLab('PLT')?.value ?? '未记录'} ×10⁹/L`, lastLab('PLT') ? `下限 ${lastLab('PLT').refLow ?? '未印'}` : '—'],
+          ['ANA（鉴别参考）', p.antibodies.ana === 'positive' ? '阳性' : p.antibodies.ana === 'negative' ? '阴性' : '未检测', p.antibodies.note || '未记录'],
+          ['主要影像', p.imaging ? p.imaging.value : '未记录', p.imaging ? p.imaging.date + ' · ' + p.imaging.method : '—'],
+          ['最近 ESR', `${lastLab('ESR')?.value ?? '未记录'} ${UNITS.ESR}`, lastLab('ESR') ? `${lastLab('ESR').lab} · ${lastLab('ESR').refHigh == null ? '本单未印上限' : '单据上限 ' + lastLab('ESR').refHigh}` : '—'],
+          ['最近 CRP', `${lastLab('CRP')?.value ?? '未记录'} ${UNITS.CRP}`, lastLab('CRP') ? `${lastLab('CRP').lab} · ${lastLab('CRP').refHigh == null ? '本单未印上限' : '单据上限 ' + lastLab('CRP').refHigh}` : '—'],
+          ['最近血红蛋白', `${lastLab('Hb')?.value ?? '未记录'} ${UNITS.Hb}`, lastLab('Hb') ? `单据上限 ${lastLab('Hb').refHigh ?? '未印'}` : '—'],
           ['年龄 / 性别', `${p.age} 岁 · ${p.sex}`, '档案基本信息'],
         ]).map(([k, v, src]) => `<dl><dt>${esc(k)}</dt><dd><b>${esc(v)}</b><span>${esc(src)}</span></dd></dl>`).join('')}</div>
         <div class="small-note">只描述你记录里有什么。缺的项不是"不符合"——它只会让下面的条目落进「待确认」。</div>
@@ -1175,7 +1165,7 @@
       ${m && !m.available ? `<div class="card"><p class="muted">${esc(m.reason)}</p></div>` : ''}
       <div class="card">
         <div class="card-head"><span class="card-title">按关键词检索本机快照</span><span class="muted">只查标题；不是全库扫描</span></div>
-        <div class="field"><label for="trial-kw"><span>关键词（题目包含）</span><input type="search" id="trial-kw" placeholder="如 GCA / 瘙痒 / 熊去氧胆酸 / 胆管炎"></label></div>
+        <div class="field"><label for="trial-kw"><span>关键词（题目包含）</span><input type="search" id="trial-kw" placeholder="如 GCA / 巨细胞动脉炎 / temporal arteritis / 托珠单抗"></label></div>
         <div class="actions-row" style="margin-top:8px">
           <button class="btn" type="button" id="do-search">按关键词检索</button>
           <span class="muted">检索本机快照内标题包含该词的条目；候选池口径见上</span>
@@ -1193,20 +1183,20 @@
       </div>`
   }
 
-  /* 原型里的匹配：只跑演示档案自带的 2 条登记，规则与服务器同构
+  /* 原型里的匹配：只跑演示档案自带的 2 条明示虚构登记，规则与服务器同构
      （结构化 / 文本 / 宽口径三层 + 逐词证据），这样"分层"这件事在原型里也看得见。
-     开发版由 scripts/build-public.mjs 换成真接口调用，两边的结果形状必须一致。 */
+     开发版由 scripts/migrate-public.mjs 换成真接口调用，两边的结果形状必须一致。 */
   function demoMatch(p) {
-    const TERMS = ['原发性硬化性胆管炎', '硬化性胆管炎', 'GCA', '胆管炎', '熊去氧胆酸', 'UDCA',
-      '奥贝胆酸', '奥贝胆酸', '肝硬化', '瘙痒', '核周型中性粒细胞胞质抗体', 'pANCA']
-    const BROAD = ['罕见病', '实体瘤', '慢性肝病', '肝脏疾病', '肝病']
+    const TERMS = ['巨细胞动脉炎', 'giant cell arteritis', 'temporal arteritis', 'Horton disease', 'GCA', '血管炎', '托珠单抗', 'tocilizumab', '泼尼松', 'temporal artery']
+    const BROAD = ['罕见病', '风湿免疫病', '慢性病', '自身免疫']
     const rows = (p.trials || []).map((t) => {
       const title = t.title
       const structured = []
-      if ((p.antibodies.panca === 'positive') && /\bpANCA\b|核周型中性粒细胞胞质抗体/i.test(title)) {
-        structured.push({ field: 'pANCA', value: '阳性（登记口径）', source: p.antibodies.note, matchedIn: '标题' })
+      const usingTcz = (p.meds || []).some((x) => /托珠单抗|tocilizumab/i.test(String(x.name || '')))
+      if (usingTcz && /托珠单抗|tocilizumab/i.test(title)) {
+        structured.push({ field: 'meds_use', value: '在用：托珠单抗（登记口径）', source: (p.meds || []).find((x) => /托珠单抗|tocilizumab/i.test(String(x.name || ''))).startDate, matchedIn: '标题' })
       }
-      const text = TERMS.filter((x) => title.includes(x)).map((term) => ({ term, matchedIn: '标题' }))
+      const text = TERMS.filter((x) => title.toLowerCase().includes(x.toLowerCase())).map((term) => ({ term, matchedIn: '标题' }))
       const broad = BROAD.filter((x) => title.includes(x)).map((term) => ({ term, matchedIn: '标题' }))
       return {
         recordId: t.id, sourceId: t.source, title, recruitmentStatus: t.status,
@@ -1219,13 +1209,13 @@
     const layers = [
       { key: 'structured', title: '结构化命中', hint: '建档里的明确实体出现在登记标题里', rows: pick((r) => r.structured.length) },
       { key: 'text', title: '文本命中', hint: '题材词重合，逐词给出现位置', rows: pick((r) => !r.structured.length && r.text.length) },
-      { key: 'broad', title: '宽口径命中', hint: '只沾到"肝病/罕见病"这类大词，排最后', rows: pick((r) => !r.structured.length && !r.text.length && r.broad.length) },
+      { key: 'broad', title: '宽口径命中', hint: '只沾到"罕见病/风湿免疫病"这类大词，排最后', rows: pick((r) => !r.structured.length && !r.text.length && r.broad.length) },
     ]
     return {
       available: true, snapshotDate: '2026-10-25', trialCount: rows.length,
       counts: { structured: layers[0].rows.length, text: layers[1].rows.length, broad: layers[2].rows.length },
       layers,
-      unmatched: ['入排条件原文（本登记的纳入/排除标准尚未采集）', 'ECOG / 体力状态评分', '既往 UDCA 疗程与剂量', '近 3 个月合并用药与剂量'],
+      unmatched: ['入排条件原文（本登记的纳入/排除标准尚未采集）', '既往激素疗程与剂量', '近 3 个月合并用药与剂量'],
     }
   }
 
@@ -1246,7 +1236,8 @@
   function trialSourcesHtml() {
     const meta = (typeof DEMO !== 'undefined' && DEMO.snapshotMeta) || null
     if (!meta) {
-      return '<p class="muted">快照元信息未载入：本机没有已采集的临床研究快照。查不到不等于没有研究。</p>'
+      return `<p class="muted">快照元信息未载入：本机没有已采集的临床研究快照（research/gca/manifest 未生成）。查不到不等于没有研究。</p>
+        <p class="muted" style="margin-top:6px">候选池口径：已载 N = 快照 manifest 的 recordCount；相关 Y = 标题含本病关键词（巨细胞动脉炎 / giant cell arteritis / temporal arteritis / Horton / 血管炎 / GCA）的条数；快照 M = 快照日期。三者由 M4 阶段真实快照生成后回填；在那之前，演示态只显示明示虚构条目（fictional:true）。</p>`
     }
     const rows = (meta.sources || []).map((s) => `<li><span class="time">${esc(s.id)}</span><span>${esc(snapshotStateLabel(s.state))}${s.queried != null ? ` · 查询请求 ${esc(String(s.queried))} 次` : ''}</span></li>`).join('')
     return `
@@ -1287,7 +1278,7 @@
     const doMatch = $('#do-match')
     if (doMatch) doMatch.addEventListener('click', () => {
       /* 原型里没有接口：用演示规则跑一遍，让"分层 + 证据"这件事可看见。
-         开发版由 build-public 换成真接口调用。 */
+         开发版由 migrate-public 换成真接口调用。 */
       state.trialMatch = demoMatch(profile())
       render()
     })
@@ -1302,7 +1293,7 @@
     $$('[data-chart-code]').forEach((b) => b.addEventListener('click', () => {
       const code = b.dataset.chartCode
       if (code === '__reset') {
-        state.chartCodes = ['ALP', 'GGT', 'TBil']
+        state.chartCodes = ['ESR', 'CRP', 'Hb']
       } else if (state.chartCodes.includes(code)) {
         state.chartCodes = state.chartCodes.filter((c) => c !== code)
       } else if (state.chartCodes.length >= 5) {
@@ -1327,26 +1318,26 @@
         ? '已把这一页的要点交给原生会话草稿（未自动发送）'
         : '独立打开时没有会话面板：这条上下文只在 DSH Desktop 里能带进 AI 对话')
     }))
-    const saveItch = $('#save-itch')
-    if (saveItch) saveItch.addEventListener('click', () => {
+    const saveHeadache = $('#save-headache')
+    if (saveHeadache) saveHeadache.addEventListener('click', () => {
       const s = {
         date: '2026-10-25',
-        itch: Number($('#itch').value),
-        nightWorse: $('#night').checked,
-        scratch: $('#scratch').checked,
-        sleepBreaks: Number(state.draft.sleepBreaks),
-        fatigue: state.draft.fatigue,
+        headache: Number($('#headache').value),
+        stiffness: state.draft.stiffness,
+        scalp: $('#scalp').checked,
+        jaw: $('#jaw').checked,
+        vision: $('#vision').checked,
         note: $('#note').value,
       }
       state.localSymptoms.unshift(s)
       toast('已记下这一次（演示：仅本页内存，不落库）')
       state.view = 'symptoms'; state.sub = 'log'; render(); syncHash()
     })
-    const itch = $('#itch')
-    if (itch) itch.addEventListener('input', () => { $('#itch-out').textContent = itch.value; state.draft.itch = Number(itch.value) })
-    $$('[data-fatigue]').forEach((b) => b.addEventListener('click', () => {
-      state.draft.fatigue = Number(b.dataset.fatigue)
-      $$('[data-fatigue]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)))
+    const headacheInput = $('#headache')
+    if (headacheInput) headacheInput.addEventListener('input', () => { $('#headache-out').textContent = headacheInput.value; state.draft.headache = Number(headacheInput.value) })
+    $$('[data-stiffness]').forEach((b) => b.addEventListener('click', () => {
+      state.draft.stiffness = Number(b.dataset.stiffness)
+      $$('[data-stiffness]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)))
     }))
     const miss = $('[data-miss]')
     if (miss) miss.addEventListener('click', () => toast('已记一次漏服（演示：不落库）'))
@@ -1361,7 +1352,7 @@
     /* 私密切换：demo 态明说「不落库」；开发版由双通道接管（POST /privacy 写库 + 重载）。 */
     const privBtn = $('[data-privacy]')
     if (privBtn) privBtn.addEventListener('click', () => toast('演示态：私密标记只在开发版里写入本机数据库'))
-    /* 筛查随访「记一次结果」：demo 态只进内存（与痒/累同一口径）；
+    /* 影像与随访「记一次结果」：demo 态只进内存（与头痛/晨僵同一口径）；
        开发版由 migrate-public 注入的双通道接管（API 在 → 落 sqlite）。 */
     const saveScr = $('[data-screening]')
     if (saveScr) saveScr.addEventListener('click', () => {
@@ -1370,7 +1361,7 @@
       if (!result) return toast('先照抄一句报告原文（工作台只抄写，不判断）')
       const date = $('#scr-date')?.value || null
       const detail = $('#scr-detail')?.value.trim() || null
-      const titles = { colonoscopy: '肠镜（共病）', mrcp: 'MRCP（胆管成像）', fibroscan: '弹性（肝纤维化）', gallbladder: '胆囊', endoscopy: '胃镜' }
+      const titles = { us_temporal: '颞动脉超声', biopsy: '颞动脉活检', cta: 'CTA / MRA', petct: 'PET-CT', pmr_followup: 'PMR 随访' }
       profile().screening.push({ type: kind, date, result, detail, sectionTitle: titles[kind] || '' })
       toast('已记下这一次（演示：仅本页内存，不落库）')
       render()
@@ -1405,13 +1396,13 @@
         `此后新增记录未包含。本文件只整理资料，不构成医疗建议。`,
         '',
         `【最近一次化验】${last.date} ${last.items[0].lab}`,
-        ...last.items.map((i) => `- ${i.code} ${i.value} ${i.unit || ''}（参考 ${i.refLow}–${i.refHigh ?? '未印'}）`),
+        ...last.items.map((i) => `- ${i.code} ${i.value} ${i.unit || ''}（参考 ${i.refLow ?? '未印'}–${i.refHigh ?? '未印'}）`),
         '',
         `【当前用药】`,
         ...p.meds.map((m) => `- ${m.name} ${m.doseText}（${m.freq}）获批状态未核实`),
         '',
         `【感受记录】`,
-        ...(sharedSym.length ? sharedSym.map((s) => `- ${s.date} 痒 ${s.itch == null ? '未记' : s.itch}/10 · 累 ${s.fatigue == null ? '未记' : s.fatigue}/3${s.note ? ' · ' + s.note : ''}`) : ['- 无']),
+        ...(sharedSym.length ? sharedSym.map((s) => `- ${s.date} 头痛 ${s.headache == null ? '未记' : s.headache}/10 · 晨僵 ${s.stiffness == null ? '未记' : s.stiffness}/3${s.vision ? ' · 视力症状（就医提醒）' : ''}${s.note ? ' · ' + s.note : ''}`) : ['- 无']),
         '',
         `【待问医生】`,
         ...p.questions.filter((q) => !q.done).map((q) => `- ${q.text}`),
@@ -1437,20 +1428,23 @@
   function draftContext(label) {
     const p = profile()
     const last = p.labs[p.labs.length - 1]
-    const alp = last.items.find((i) => i.code === 'ALP')
-    return `${p.label}｜确诊 ${p.diagnosedAt}｜最近化验 ${last.date}：ALP ${alp.value} U/L（${alp.refHigh ? pct(alp.value / alp.refHigh) + '×ULN' : '无上限'}）｜最近感受：痒 ${sharedOnly(allSymptoms())[0]?.itch ?? '—'}/10`
+    const esr = last.items.find((i) => i.code === 'ESR')
+    const crp = last.items.find((i) => i.code === 'CRP')
+    const lastSym = sharedOnly(allSymptoms())[0]
+    return `${p.label}｜确诊 ${p.diagnosedAt}｜最近化验 ${last.date}：ESR ${esr ? esr.value + ' ' + UNITS.ESR : '未记'}、CRP ${crp ? crp.value + ' ' + UNITS.CRP : '未记'}｜最近感受：头痛 ${lastSym?.headache ?? '—'}/10`
   }
 
   /* ------------------------------ 整页视图（32 号） ------------------------------ */
   function basicsPage() {
     const p = profile()
     return `<div class="card">
-      <h3>诊断与抗体 · 完整记录</h3>
+      <h3>诊断与检查 · 完整记录</h3>
       <p class="muted">这一页把「确诊时的原文」与「后来补做的检查」分开列，避免把不同时间的结论混在一起。</p>
       <div class="row" style="margin-top:10px">
         ${kv('确诊日期', esc(p.diagnosedAt))}
         ${kv('开始用药', esc(p.startedAt))}
-        ${kv('pANCA（参考）', { positive: '阳性', negative: '阴性', untested: '未检测' }[p.antibodies.panca])}
+        ${kv('ANA（鉴别参考）', { positive: '阳性', negative: '阴性', untested: '未检测' }[p.antibodies.ana])}
+        ${kv('主要影像', p.imaging ? esc(p.imaging.method) : '未记录')}
       </div>
       <p class="muted" style="margin-top:8px">来源：${esc(p.antibodies.note)}</p>
     </div>`
@@ -1549,21 +1543,20 @@
     for (const r of p.labs) { const it = r.items.find((x) => x.code === metric); if (it) rows.push({ date: r.date, ...it }) }
     if (!rows.length) return '<p class="muted">没有所选指标。</p>'
     const last = rows[rows.length - 1]
-    return `<section class="card"><h3>${esc(metric)} · 最近一次</h3><p>${esc(last.date)}：<b>${esc(String(last.value))} ${esc(last.unit)}</b>${last.refHigh == null ? '（单据未印上限）' : '（上限 ' + esc(String(last.refHigh)) + '）'}</p><p class="muted">来源：${esc(last.lab)} 化验单。仅回顾，不解读。</p></section>`
+    return `<section class="card"><h3>${esc(metric)} · 最近一次</h3><p>${esc(last.date)}：<b>${esc(String(last.value))} ${esc(last.unit)}</b>${last.refHigh == null ? '（单据未印上限）' : '（单据上限 ' + esc(String(last.refHigh)) + '）'}</p><p class="muted">来源：${esc(last.lab)} 化验单。仅回顾，不解读。</p></section>`
   }
   function pathologyHtml() {
     const p = profile()
-    const mrcp = (p.screening || []).find((s) => s.type === 'mrcp')
-    const us = (p.screening || []).find((s) => s.type === 'gallbladder')
+    const us = (p.screening || []).find((s) => s.type === 'us_temporal')
+    const cta = (p.screening || []).find((s) => s.type === 'cta')
     return `<section class="card">
       <h3>确诊依据 · 报告原文（照抄，不判读）</h3>
       <div class="row" style="margin-top:10px">
         ${kv('确诊日期', esc(p.diagnosedAt))}
-        ${kv('pANCA（参考）', { positive: '阳性', negative: '阴性', untested: '未检测' }[p.antibodies.panca])}
-        ${kv('ANA', { positive: '阳性', negative: '阴性', untested: '未检测' }[p.antibodies.ana])}
+        ${kv('ANA（鉴别参考）', { positive: '阳性', negative: '阴性', untested: '未检测' }[p.antibodies.ana])}
       </div>
-      <p class="muted" style="margin-top:8px">MRCP：${esc((mrcp && mrcp.result) || '未记录')}</p>
-      <p class="muted">超声：${esc((us && us.result) || '未记录')}</p>
+      <p class="muted" style="margin-top:8px">颞动脉超声：${esc((us && us.result) || '未记录')}</p>
+      <p class="muted">CTA / MRA：${esc((cta && cta.result) || '未记录')}</p>
       <p class="muted">备注：${esc(p.antibodies.note)}</p>
       <button class="pv-btn" type="button" data-pv-drill="gca-original">查看报告原文（登记摘要）</button>
       <p class="muted" style="margin-top:6px">原型演示：原件文件未挂载；开发版按 02 号契约从资料目录读取。</p>
@@ -1701,7 +1694,7 @@
     })
     const sp = $('#agent-splitter')
     if (sp) {
-  
+
       sp.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
           e.preventDefault()
@@ -1761,7 +1754,7 @@
   }
   document.addEventListener('DOMContentLoaded', boot)
 
-  /* 探针 / 测试入口（与 cidp 家族 __CIDP_APP__ 同位）：读 state、显式重渲染，不绕过 UI 事件 */
+  /* 探针 / 测试入口（与家族 __GCA_APP__ 同位）：读 state、显式重渲染，不绕过 UI 事件 */
   window.__GCA_APP__ = { state, profile, render, allSymptoms, sharedOnly, draftContext, VIEWS, applyHash }
 })()
 
@@ -1773,7 +1766,7 @@ function pageDashboardOverview() { return pv('dashboard/overview') }
 function pageDashboardNext() { return pv('dashboard/next') }
 function pageDashboardChanges() { return pv('dashboard/changes') }
 function pageBasicsDiagnosis() { return pv('basics/diagnosis') }
-function pageBasicsFibrosis() { return pv('basics/fibrosis') }
+function pageBasicsImaging() { return pv('basics/imaging') }
 function pageBasicsComorbidity() { return pv('basics/comorbidity') }
 function pageEpisodesList() { return pv('episodes/list') }
 function pageEpisodesTimeline() { return pv('episodes/timeline') }
@@ -1782,16 +1775,16 @@ function pageTreatmentPathway() { return pv('treatment/pathway') }
 function pageTreatmentSideeffects() { return pv('treatment/sideeffects') }
 function pageLabsCards() { return pv('labs/cards') }
 function pageLabsChart() { return pv('labs/chart') }
-function pageLabsGrading() { return pv('labs/grading') }
-function pageSymptomsItch() { return pv('symptoms/itch') }
-function pageSymptomsFatigue() { return pv('symptoms/fatigue') }
+function pageLabsRefs() { return pv('labs/refs') }
+function pageSymptomsHeadache() { return pv('symptoms/headache') }
+function pageSymptomsStiffness() { return pv('symptoms/stiffness') }
 function pageSymptomsLog() { return pv('symptoms/log') }
 function pageSymptomsImpact() { return pv('symptoms/impact') }
-function pageScreeningColonoscopy() { return pv('screening/colonoscopy') }
-function pageScreeningMrcp() { return pv('screening/mrcp') }
-function pageScreeningFibroscan() { return pv('screening/fibroscan') }
-function pageScreeningGallbladder() { return pv('screening/gallbladder') }
-function pageScreeningEndoscopy() { return pv('screening/endoscopy') }
+function pageScreeningUltrasound() { return pv('screening/ultrasound') }
+function pageScreeningBiopsy() { return pv('screening/biopsy') }
+function pageScreeningCta() { return pv('screening/cta') }
+function pageScreeningPetct() { return pv('screening/petct') }
+function pageScreeningPmr() { return pv('screening/pmr') }
 function pageFollowupCadence() { return pv('followup/cadence') }
 function pageFollowupPrep() { return pv('followup/prep') }
 function pageFollowupTodos() { return pv('followup/todos') }
@@ -1806,7 +1799,7 @@ const ROUTES = {
   'dashboard/next': pageDashboardNext,
   'dashboard/changes': pageDashboardChanges,
   'basics/diagnosis': pageBasicsDiagnosis,
-  'basics/fibrosis': pageBasicsFibrosis,
+  'basics/imaging': pageBasicsImaging,
   'basics/comorbidity': pageBasicsComorbidity,
   'episodes/list': pageEpisodesList,
   'episodes/timeline': pageEpisodesTimeline,
@@ -1815,16 +1808,16 @@ const ROUTES = {
   'treatment/sideeffects': pageTreatmentSideeffects,
   'labs/cards': pageLabsCards,
   'labs/chart': pageLabsChart,
-  'labs/grading': pageLabsGrading,
-  'symptoms/itch': pageSymptomsItch,
-  'symptoms/fatigue': pageSymptomsFatigue,
+  'labs/refs': pageLabsRefs,
+  'symptoms/headache': pageSymptomsHeadache,
+  'symptoms/stiffness': pageSymptomsStiffness,
   'symptoms/log': pageSymptomsLog,
   'symptoms/impact': pageSymptomsImpact,
-  'screening/colonoscopy': pageScreeningColonoscopy,
-  'screening/mrcp': pageScreeningMrcp,
-  'screening/fibroscan': pageScreeningFibroscan,
-  'screening/gallbladder': pageScreeningGallbladder,
-  'screening/endoscopy': pageScreeningEndoscopy,
+  'screening/ultrasound': pageScreeningUltrasound,
+  'screening/biopsy': pageScreeningBiopsy,
+  'screening/cta': pageScreeningCta,
+  'screening/petct': pageScreeningPetct,
+  'screening/pmr': pageScreeningPmr,
   'followup/cadence': pageFollowupCadence,
   'followup/prep': pageFollowupPrep,
   'followup/todos': pageFollowupTodos,
@@ -1936,8 +1929,8 @@ const ROUTES = {
   function emptyProfile(key, name) {
     return {
       key: key, label: name, name: name, age: null, sex: null, diagnosedAt: null, startedAt: null,
-      weightKg: null, antibodies: { panca: 'untested', ana: 'untested', note: '' },
-      fibrosis: null, ibd: { type: 'untested', note: '', colonoscopyLast: null },
+      weightKg: null, antibodies: { ana: 'untested', note: '' },
+      imaging: null, pmr: { status: 'untested', note: '', lastVisit: null },
       comorbidity: [], meds: [], adherence: [], episodes: [], symptoms: [], screening: [],
       questions: [], documents: [], trials: [], pathway: [], labs: [],
     }
@@ -2039,16 +2032,16 @@ const ROUTES = {
     var d = new Date()
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
   }
-  /* 痒与累（mind → symptom_notes） */
-  hookWrite('#save-itch', function () {
-    var itchEl = document.getElementById('itch')
-    if (!itchEl) return null
+  /* 头痛与晨僵（mind → symptom_notes） */
+  hookWrite('#save-headache', function () {
+    var headEl = document.getElementById('headache')
+    if (!headEl) return null
     var app = window.__GCA_APP__
+    var b = function (id) { var el = document.getElementById(id); return el && el.checked ? 1 : 0 }
     return { kind: 'mind', data: {
-      kind: 'itch', itch: Number(itchEl.value),
-      nightWorse: document.getElementById('night') && document.getElementById('night').checked ? 1 : 0,
-      sleepBreaks: app && app.state && app.state.draft && app.state.draft.sleepBreaks,
-      fatigue: app && app.state && app.state.draft ? app.state.draft.fatigue : null,
+      kind: 'headache', headache: Number(headEl.value),
+      scalp: b('scalp'), jaw: b('jaw'), vision: b('vision'),
+      stiffness: app && app.state && app.state.draft ? app.state.draft.stiffness : null,
       note: (document.getElementById('note') || {}).value || null,
       recordedOn: localTodayGCA(),
     }, after: function (app2) { app2.state.view = 'symptoms'; app2.state.sub = 'log'; app2.render() } }
